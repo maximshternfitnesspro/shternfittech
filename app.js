@@ -659,7 +659,12 @@ function playOnboardingTheme() {
 }
 
 function loadState() {
-  const raw = localStorage.getItem(STORAGE_KEY);
+  let raw = null;
+  try {
+    raw = window.localStorage ? window.localStorage.getItem(STORAGE_KEY) : null;
+  } catch {
+    raw = null;
+  }
   const nowIso = new Date().toISOString();
   if (!raw) {
     return {
@@ -774,7 +779,11 @@ function applyDebugStateFromUrl() {
 }
 
 function saveState() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  try {
+    if (window.localStorage) window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch {
+    // Storage может быть недоступен (например, встроенные webview с ограничениями).
+  }
 }
 
 function clamp(value, min, max) {
@@ -1730,21 +1739,12 @@ function runBootSequence() {
   const duration = 1400;
   const forceOnboarding = new URLSearchParams(window.location.search).get("onboarding") === "1";
 
-  let start = null;
-  function step(timestamp) {
-    if (!start) start = timestamp;
-    const progress = clamp((timestamp - start) / duration, 0, 1);
-    const current = Math.round(bootTarget * progress);
+  if (!bootScreen || !bootFill || !bootPercent || !bootMeta) return;
 
-    bootFill.style.width = `${current}%`;
-    bootPercent.textContent = `${current}%`;
-    bootMeta.textContent =
-      current < 30 ? "Загрузка ядра" : current < 60 ? "Синхронизация данных" : "Подготовка интерфейса";
-
-    if (progress < 1) {
-      requestAnimationFrame(step);
-      return;
-    }
+  let finished = false;
+  const finalize = () => {
+    if (finished) return;
+    finished = true;
 
     setTimeout(() => {
       bootScreen.classList.add("is-hidden");
@@ -1762,6 +1762,43 @@ function runBootSequence() {
         }
       }, 600);
     }, 250);
+  };
+
+  // Fallback: если rAF по какой-то причине не отрабатывает в webview — всё равно снимаем экран.
+  const fallbackTimer = setTimeout(() => {
+    bootFill.style.width = "100%";
+    bootPercent.textContent = "100%";
+    bootMeta.textContent = "Подготовка интерфейса";
+    finalize();
+  }, duration + 2400);
+
+  let start = null;
+  function step(timestamp) {
+    if (!start) start = timestamp;
+    const progress = clamp((timestamp - start) / duration, 0, 1);
+    const current = Math.round(bootTarget * progress);
+
+    bootFill.style.width = `${current}%`;
+    bootPercent.textContent = `${current}%`;
+    bootMeta.textContent =
+      current < 30 ? "Загрузка ядра" : current < 60 ? "Синхронизация данных" : "Подготовка интерфейса";
+
+    if (progress < 1) {
+      requestAnimationFrame(step);
+      return;
+    }
+
+    clearTimeout(fallbackTimer);
+    finalize();
+  }
+
+  if (typeof requestAnimationFrame !== "function") {
+    clearTimeout(fallbackTimer);
+    bootFill.style.width = "100%";
+    bootPercent.textContent = "100%";
+    bootMeta.textContent = "Подготовка интерфейса";
+    finalize();
+    return;
   }
 
   requestAnimationFrame(step);
@@ -2083,9 +2120,23 @@ if (!motifReady) {
   });
 
   (async () => {
-    applyDebugStateFromUrl();
-    render();
     runBootSequence();
+    try {
+      const webApp = getTelegramWebApp();
+      if (webApp && typeof webApp.ready === "function") webApp.ready();
+    } catch {
+      // Ignore
+    }
+
+    applyDebugStateFromUrl();
+    try {
+      render();
+    } catch (error) {
+      // Не даём приложению "зависнуть" на boot-экране из-за runtime-ошибки.
+      // В обычном режиме это не должно происходить, но webview бывает капризным.
+      // eslint-disable-next-line no-console
+      console.error("render_failed", error);
+    }
     startAccessPolling();
     checkAccessStatus({ manual: false });
   })();
