@@ -4,6 +4,8 @@ import hashlib
 import json
 import os
 import sqlite3
+import urllib.error
+import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -24,6 +26,8 @@ TIER_HINTS = {
 }
 
 WEBHOOK_TOKEN = os.getenv("MINIAPP_TRIBUTE_WEBHOOK_TOKEN", "")
+TELEGRAM_BOT_TOKEN = (os.getenv("MINIAPP_NOTIFY_BOT_TOKEN") or os.getenv("MINIAPP_BOT_TOKEN") or "").strip()
+NOTIFY_ON_PAYMENT = os.getenv("MINIAPP_NOTIFY_ON_PAYMENT", "1").strip() not in {"0", "false", "False", "no", "NO"}
 
 app = FastAPI(title="Mini App Backend", version="1.0.0")
 
@@ -81,6 +85,34 @@ def json_dumps(payload: Any) -> str:
         return json.dumps(payload, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
     except Exception:
         return "{}"
+
+
+def send_telegram_message(tg_user_id: str, text: str) -> bool:
+    """
+    Best-effort notification after successful payment.
+    Important: Telegram allows bot->user messages only if the user started the bot earlier.
+    """
+    if not TELEGRAM_BOT_TOKEN or not NOTIFY_ON_PAYMENT:
+        return False
+
+    payload = {
+        "chat_id": tg_user_id,
+        "text": text,
+        "disable_web_page_preview": True,
+    }
+    data = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+    req = urllib.request.Request(
+        url=f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage",
+        method="POST",
+        headers={"Content-Type": "application/json"},
+        data=data,
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            response = json.loads(resp.read().decode("utf-8"))
+        return bool(response.get("ok"))
+    except (urllib.error.URLError, TimeoutError, json.JSONDecodeError):
+        return False
 
 
 def get_row(tg_user_id: str) -> sqlite3.Row | None:
@@ -373,6 +405,14 @@ async def tribute_webhook(request: Request, token: str | None = None) -> JSONRes
         )
 
     transition = upsert_paid(tg_user_id, tier, merged_payload)
+    tier_after = transition.get("tier_after", tier)
+    send_telegram_message(
+        tg_user_id,
+        (
+            f"Оплата подтверждена. Доступ {tier_after} активирован.\n\n"
+            "Открой Mini App и продолжай уровни. Если уровень не обновился — зайди в «Подписка» и нажми «Проверить оплату»."
+        ),
+    )
     return JSONResponse(
         {
             "ok": True,
