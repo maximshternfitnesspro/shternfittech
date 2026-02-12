@@ -325,7 +325,11 @@ function openExternalLink(url) {
   if (webApp) {
     // t.me links should be opened via Telegram API, otherwise iOS may open them in an in-app browser
     // and break the intended "open another Mini App" flow (e.g., Tribute checkout).
-    if (/^https?:\\/\\/t\\.me\\//i.test(url) && typeof webApp.openTelegramLink === "function") {
+    const lowered = String(url).toLowerCase();
+    if (
+      (lowered.startsWith("https://t.me/") || lowered.startsWith("http://t.me/")) &&
+      typeof webApp.openTelegramLink === "function"
+    ) {
       webApp.openTelegramLink(url);
       return;
     }
