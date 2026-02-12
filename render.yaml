@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: cheatcode-miniapp
+    env: docker
+    plan: starter
+    healthCheckPath: /api/health
+    disk:
+      name: miniapp-data
+      mountPath: /app/data
+      sizeGB: 1
+    envVars:
+      - key: MINIAPP_TRIBUTE_WEBHOOK_TOKEN
+        sync: false

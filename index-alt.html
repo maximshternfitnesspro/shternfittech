@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Чит-код на жир — Variant 2</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Russo+One&family=JetBrains+Mono:wght@400;600&family=Manrope:wght@300;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles-alt.css" />
+  </head>
+  <body>
+    <div class="app">
+      <header class="topbar">
+        <div class="brand">
+          <div class="brand__tag">ЧИТ-КОД НА ЖИР</div>
+          <div class="brand__title">ПРОТОКОЛ АКТИВЕН</div>
+        </div>
+        <div class="status">
+          <div class="status__label">СИНХРОНИЗАЦИЯ</div>
+          <div class="status__value">2 / 7</div>
+        </div>
+      </header>
+
+      <nav class="nav">
+        <button class="nav__btn active" data-nav="home">Дом</button>
+        <button class="nav__btn" data-nav="mission">Миссия</button>
+        <button class="nav__btn" data-nav="progress">Прогресс</button>
+      </nav>
+
+      <main class="screens">
+        <section class="screen active" data-screen="home">
+          <div class="card card--glow" data-accent="lime">
+            <div class="card__header">
+              <div class="card__title">Миссия дня</div>
+              <div class="chip">ДЕНЬ 3</div>
+            </div>
+            <div class="card__body">
+              <div class="mission__name">Импульс</div>
+              <div class="mission__desc">15 минут · Основа · Без инвентаря</div>
+              <div class="mission__cta">
+                <button class="btn btn--primary" id="cta-start">Запустить протокол</button>
+                <button class="btn btn--ghost">Сменить модуль</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid">
+            <div class="card" data-accent="cyan">
+              <div class="card__header">
+                <div class="card__title">Питание дня</div>
+                <div class="chip chip--cyan">КОД 02</div>
+              </div>
+              <div class="card__body">
+                <div class="metric">Белок в каждом приеме пищи</div>
+                <div class="sub">Цель: 3 приема · без перекусов после 21:00</div>
+              </div>
+            </div>
+
+            <div class="card" data-accent="magenta">
+              <div class="card__header">
+                <div class="card__title">Окно миссии</div>
+                <div class="chip chip--magenta">19:30–21:30</div>
+              </div>
+              <div class="card__body">
+                <div class="metric">Напоминание активировано</div>
+                <div class="sub">Следующий сигнал через 1ч 12м</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="screen" data-screen="mission">
+          <div class="card card--video" data-accent="lime">
+            <div class="card__header">
+              <div class="card__title">Миссия: Импульс</div>
+              <div class="chip">15:00</div>
+            </div>
+            <div class="card__body">
+              <div class="video-placeholder">
+                <div class="video-placeholder__icon">▶</div>
+                <div class="video-placeholder__text">Видео тренировки (YouTube)</div>
+              </div>
+              <div class="timer">
+                <div class="timer__label">Таймер</div>
+                <div class="timer__value">15:00</div>
+              </div>
+              <div class="mission__cta">
+                <button class="btn btn--primary">Старт</button>
+                <button class="btn btn--ghost">Пауза</button>
+                <button class="btn btn--ghost">Завершить</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="screen" data-screen="progress">
+          <div class="card" data-accent="magenta">
+            <div class="card__header">
+              <div class="card__title">Прогресс</div>
+              <div class="chip chip--magenta">УРОВЕНЬ 1</div>
+            </div>
+            <div class="card__body">
+              <div class="progress">
+                <div class="progress__ring" style="--value: 0.29">
+                  <div class="progress__value">2/7</div>
+                </div>
+                <div class="progress__meta">
+                  <div class="metric">Серия: 2 дня</div>
+                  <div class="sub">Следующая награда: тема “Night Grid”</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid">
+            <div class="card" data-accent="lime">
+              <div class="card__header">
+                <div class="card__title">Награды</div>
+                <div class="chip">ГРАНТ 01</div>
+              </div>
+              <div class="card__body">
+                <div class="metric">Разблокировано: Модуль “Перезапуск”</div>
+                <div class="sub">Осталось до следующей награды: 3 миссии</div>
+              </div>
+            </div>
+
+            <div class="card" data-accent="cyan">
+              <div class="card__header">
+                <div class="card__title">Аналитика</div>
+                <div class="chip chip--cyan">7 ДНЕЙ</div>
+              </div>
+              <div class="card__body">
+                <div class="metric">Выполнено: 2</div>
+                <div class="sub">Средняя длительность: 13:47</div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <footer class="footer">
+        <div class="footer__text">Джарвис: “Миссия ожидает. Рекомендую выполнить сегодня.”</div>
+      </footer>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>

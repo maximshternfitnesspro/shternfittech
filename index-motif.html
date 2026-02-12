@@ -1,0 +1,627 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Чит-код на сушку — Motif UI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Russo+One&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles-motif.css?v=20260212e" />
+  </head>
+  <body>
+    <div class="global-overlay" aria-hidden="true"></div>
+
+    <div class="boot-screen" id="boot-screen" aria-hidden="true">
+      <div class="boot-card">
+        <div class="boot-card__title">СИСТЕМНЫЙ ЗАПУСК</div>
+        <div class="boot-card__subtitle">Инициализация протокола</div>
+        <div class="boot-card__bar">
+          <div class="boot-card__bar-fill" id="boot-fill" style="width: 0%"></div>
+        </div>
+        <div class="boot-card__meta">
+          <span id="boot-percent">0%</span>
+          <span id="boot-meta">Загрузка ядра</span>
+        </div>
+        <div class="boot-card__log">
+          <div>Проверка модулей...</div>
+          <div>Скан системы... OK</div>
+          <div>Синхронизация данных...</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="onboarding hidden" id="onboarding">
+      <div class="onboarding__card">
+        <span class="onboarding__bolt onboarding__bolt--tl" aria-hidden="true"></span>
+        <span class="onboarding__bolt onboarding__bolt--tr" aria-hidden="true"></span>
+        <span class="onboarding__bolt onboarding__bolt--bl" aria-hidden="true"></span>
+        <span class="onboarding__bolt onboarding__bolt--br" aria-hidden="true"></span>
+        <div class="onboarding__step" id="onboarding-step-label">Шаг 1 / 3</div>
+        <section class="onboarding__screen active" data-onboarding-step="1">
+          <div class="onboarding__sysline">SYSTEM OVERRIDE INITIATED // ПРОТОКОЛ ЗАГРУЖЕН</div>
+          <div class="onboarding__sysline onboarding__sysline--demo">ДЕМО РЕЖИМ АКТИВИРОВАН: 3 УРОВНЯ БЕСПЛАТНО</div>
+          <h2 class="onboarding__title onboarding__title--glitch" data-glitch="ЧИТ-КОД НА СУШКУ">
+            ЧИТ-КОД НА СУШКУ
+          </h2>
+          <p class="onboarding__text onboarding__text--lead">Трансформация тела в режиме RPG.</p>
+          <div class="onboarding__story">
+            <div class="onboarding__story-item">
+              <span class="onboarding__story-icon">🎮</span>
+              <div class="onboarding__story-copy">
+                <div class="onboarding__story-label">В ТЕЛЕФОНЕ</div>
+                <p class="onboarding__story-text">Ты проходишь уровни и побеждаешь боссов.</p>
+              </div>
+            </div>
+            <div class="onboarding__story-item">
+              <span class="onboarding__story-icon">🔋</span>
+              <div class="onboarding__story-copy">
+                <div class="onboarding__story-label">В ЖИЗНИ</div>
+                <p class="onboarding__story-text">Твоя форма улучшается синхронно с игрой.</p>
+              </div>
+            </div>
+          </div>
+          <div class="onboarding__init">
+            <span>ГОТОВНОСТЬ</span>
+            <div class="onboarding__init-track">
+              <div class="onboarding__init-fill"></div>
+            </div>
+            <span>ГОТОВНОСТЬ</span>
+          </div>
+          <p class="onboarding__text onboarding__text--final">Просто следуй сюжету. Система уже всё посчитала.</p>
+        </section>
+        <section class="onboarding__screen" data-onboarding-step="2">
+          <h2 class="onboarding__title">Выбери режим</h2>
+          <p class="onboarding__text">Перезапуск — мягкий старт без перегруза.</p>
+          <div class="option-grid">
+            <button class="option-btn active" data-mode="Перезапуск">Перезапуск</button>
+          </div>
+        </section>
+        <section class="onboarding__screen" data-onboarding-step="3">
+          <h2 class="onboarding__title">Окно миссии</h2>
+          <p class="onboarding__text">
+            Выбери 3 часа, когда тебе удобно выполнить задания. Внутри окна — бонус чипов.
+          </p>
+          <div class="option-grid option-grid--windows">
+            <button class="option-btn active" data-window="07:00–10:00">07:00–10:00</button>
+            <button class="option-btn" data-window="13:00–16:00">13:00–16:00</button>
+            <button class="option-btn" data-window="19:30–22:30">19:30–22:30</button>
+          </div>
+        </section>
+        <div class="onboarding__actions">
+          <button class="btn btn--ghost" id="onboarding-back">Назад</button>
+          <button class="btn btn--primary" id="onboarding-next">Начать игру</button>
+          <button class="btn btn--primary hidden" id="onboarding-finish">Сохранить время</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="layout" data-progress="10">
+      <header class="hud">
+        <div class="hud__brand">
+          <div class="hud__tag">ЧИТ-КОД НА СУШКУ</div>
+          <div class="hud__title">МОДУЛЬ: ПЕРЕЗАПУСК</div>
+        </div>
+        <button class="mobile-menu-toggle" id="mobile-menu-toggle" aria-label="Открыть меню">
+          МЕНЮ
+        </button>
+        <div class="hud__stats">
+          <div class="hud__tier">
+            <span>УРОВЕНЬ ПОДПИСКИ</span>
+            <strong id="hud-tier">DEMO</strong>
+          </div>
+          <div class="hud__level">
+            <span>УРОВЕНЬ</span>
+            <strong id="hud-level">03</strong>
+          </div>
+          <div class="hud__bar">
+            <div class="hud__bar-label">СИНХРОНИЗАЦИЯ</div>
+            <div class="hud__bar-track">
+              <div class="hud__bar-fill" id="hud-fill" style="width: 10%"></div>
+            </div>
+            <div class="hud__bar-meta" id="hud-meta">10%</div>
+          </div>
+        </div>
+      </header>
+
+      <aside class="sidebar">
+        <div class="sidebar__label">Навигация</div>
+        <button class="nav__btn active" data-nav="home">Дом</button>
+        <button class="nav__btn" data-nav="mission">Миссия</button>
+        <button class="nav__btn" data-nav="progress">Прогресс</button>
+        <button class="nav__btn" data-nav="shop">Магазин</button>
+        <button class="nav__btn" data-nav="subscription">Подписка</button>
+        <button class="nav__btn" data-nav="settings">Настройки</button>
+        <div class="sidebar__footer">
+          <div class="plan-badge">
+            <div class="plan-badge__label">Подписка</div>
+            <div class="plan-badge__current"><span class="sub-highlight">ТЕКУЩИЙ УРОВЕНЬ</span></div>
+            <div class="plan-badge__value" id="sidebar-plan">CORE</div>
+            <div class="plan-badge__meta" id="sidebar-subscription-term">Осталось 30 дней</div>
+            <div class="plan-badge__meta">Следующий апгрейд</div>
+            <div class="plan-badge__benefits" id="sidebar-upgrade-benefits">
+              BOOST: всё, что есть в CORE и: разборы куратора, закрытая группа, приоритетная поддержка.
+            </div>
+            <button class="btn btn--ghost plan-badge__btn" id="sidebar-upgrade-btn">Оформить BOOST (мес.)</button>
+          </div>
+        </div>
+      </aside>
+
+      <main class="center">
+        <div class="status-banner" id="boss-banner">До встречи с боссом 5 уровней.</div>
+
+        <section class="screen active" data-screen="home">
+          <div class="panel panel--primary">
+            <div class="panel__header">
+              <div class="panel__title">Миссия дня</div>
+              <div class="chip chip--pink" id="home-level-chip">УРОВЕНЬ 03</div>
+            </div>
+            <div class="panel__body">
+              <div class="hero">
+                <div class="hero__title" id="home-mission-title">Импульс</div>
+                <div class="hero__meta" id="home-mission-meta">15 минут · Перезапуск · Без инвентаря</div>
+                <div class="metric__label demo-note" id="home-demo-note">ДЕМО РЕЖИМ АКТИВИРОВАН: 3 уровня бесплатно.</div>
+              </div>
+              <div class="cta-stack">
+                <button class="btn btn--primary" id="cta-start">Запустить протокол</button>
+                <button class="btn btn--ghost btn--locked" id="module-switch-btn">Скоро: другие программы</button>
+              </div>
+              <div class="metrics">
+                <div class="metric">
+                  <div class="metric__label">Синхронизация</div>
+                  <div class="metric__value" id="home-sync-series">2 уровня подряд</div>
+                </div>
+                <div class="metric">
+                  <div class="metric__label">Окно</div>
+                  <div class="metric__value" id="home-window">19:30–22:30</div>
+                </div>
+                <div class="metric">
+                  <div class="metric__label">Бонус окна</div>
+                  <div class="metric__value" id="home-bonus">Осталось 2ч 14м</div>
+                </div>
+              </div>
+              <div class="metric__label" id="home-access-rule">
+                Лимит: 1 уровень в день. Следующий уровень открывается на следующий день в 07:00 МСК.
+              </div>
+              <div class="warning-block hidden" id="home-paywall-block">
+                <div class="warning-block__title">Демо завершено: 3/3</div>
+                <div class="warning-block__text">Чтобы открыть уровни 4+, выбери тариф и продолжай цикл.</div>
+                <div class="cta-row">
+                  <button class="btn btn--primary" id="home-paywall-btn">Открыть тарифы</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel panel--secondary">
+            <div class="panel__header">
+              <div class="panel__title">Дополнительное задание</div>
+              <div class="chip chip--cyan">МОД 01</div>
+            </div>
+            <div class="panel__body">
+              <div class="metric__value" id="sidequest-name">Белок в каждом приеме пищи</div>
+              <div class="metric__label">Даёт модификатор недели.</div>
+              <div class="cta-row">
+                <button class="btn btn--ghost" id="sidequest-btn">Выполнено</button>
+              </div>
+              <div class="metric__label" id="sidequest-status">Статус: не выполнено</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="screen" data-screen="mission">
+          <div class="panel panel--primary">
+            <div class="panel__header">
+              <div class="panel__title" id="mission-panel-title">Миссия: Импульс</div>
+              <div class="chip chip--pink">15:00</div>
+            </div>
+            <div class="panel__body">
+              <div class="video-placeholder">
+                <div class="video-placeholder__icon">▶</div>
+                <div class="video-placeholder__text">Тренировка в YouTube</div>
+                <div class="watch-track">
+                  <div class="watch-fill" id="mission-watch-fill" style="width: 0%"></div>
+                </div>
+              </div>
+              <button class="btn btn--primary mission-main-btn" id="mission-start">Запустить миссию</button>
+              <div class="metric__label">Завершение автоматически после просмотра до конца.</div>
+              <div class="metric__label" id="mission-availability">
+                Доступен 1 уровень на сегодня. После прохождения новый откроется завтра в 07:00 МСК.
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="screen" data-screen="result">
+          <div class="panel panel--primary">
+            <div class="panel__header">
+              <div class="panel__title">Уровень пройден</div>
+              <div class="chip chip--cyan">ОК</div>
+            </div>
+            <div class="panel__body">
+              <div class="result-burst hidden" id="result-burst">УРОВЕНЬ ПРОЙДЕН</div>
+              <div class="metric__value">Прогресс сохранён. Награда начислена.</div>
+              <div class="result-grid">
+                <div class="metric">
+                  <div class="metric__label">Награда</div>
+                  <div class="metric__value" id="result-main-reward">+120 чипов</div>
+                </div>
+                <div class="metric">
+                  <div class="metric__label">Бонус окна</div>
+                  <div class="metric__value" id="result-bonus-reward">+30 чипов</div>
+                </div>
+              </div>
+              <div class="result-total" id="result-total">+150 чипов</div>
+              <div class="metric__label" id="result-unlock-note">
+                Следующий уровень откроется на следующий день в 07:00 МСК. Лимит: 1 уровень в день.
+              </div>
+              <div class="cta-row">
+                <button class="btn btn--primary" id="result-next">К следующему уровню</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="screen" data-screen="progress">
+          <div class="panel panel--primary">
+            <div class="panel__header">
+              <div class="panel__title">Прогресс</div>
+              <div class="chip chip--pink">ЦИКЛ 01</div>
+            </div>
+            <div class="panel__body">
+              <div class="progress">
+                <div class="progress__ring" id="progress-ring" style="--value: 0.1">
+                  <div class="progress__value" id="progress-level">3/30</div>
+                </div>
+                <div class="progress__meta">
+                  <div class="metric__value" id="progress-sync-series">Синхронизация: 2</div>
+                  <div class="metric__label">Подряд в бонусном окне.</div>
+                </div>
+              </div>
+              <div class="metrics">
+                <div class="metric">
+                  <div class="metric__label">Чипы</div>
+                  <div class="metric__value" id="progress-chips">420</div>
+                </div>
+                <div class="metric">
+                  <div class="metric__label">До босса</div>
+                  <div class="metric__value" id="progress-boss">4 уровней</div>
+                </div>
+              </div>
+              <div class="progress-log" id="progress-log"></div>
+              <div class="warning-block hidden" id="progress-paywall-block">
+                <div class="warning-block__title">Демо-модуль завершён</div>
+                <div class="warning-block__text">Прогресс сохранён. Для следующих уровней нужен платный доступ.</div>
+                <div class="cta-row">
+                  <button class="btn btn--primary" id="progress-paywall-btn">Открыть тарифы</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="screen" data-screen="shop">
+          <div class="panel panel--primary">
+            <div class="panel__header">
+              <div class="panel__title">Магазин протокола</div>
+              <div class="chip chip--pink" id="shop-balance">ЧИПЫ 420</div>
+            </div>
+            <div class="panel__body">
+              <div class="metric__label">Трать чипы на темы, эффекты и ранги.</div>
+              <div class="shop-grid">
+                <article class="shop-item">
+                  <div class="shop-item__name">Neon Lab</div>
+                  <div class="shop-item__desc">Чистый лабораторный неон. Холодный контроль.</div>
+                  <button class="btn btn--ghost shop-preview" data-preview="neon_lab">Превью 3 сек</button>
+                  <button class="btn btn--ghost shop-buy" data-item="neon_lab" data-cost="2200">Купить за 2200 чипов</button>
+                </article>
+                <article class="shop-item">
+                  <div class="shop-item__name">Blackout Red</div>
+                  <div class="shop-item__desc">Темнота + красная линия. Жёсткий режим.</div>
+                  <button class="btn btn--ghost shop-preview" data-preview="blackout_red">Превью 3 сек</button>
+                  <button class="btn btn--ghost shop-buy" data-item="blackout_red" data-cost="2800">Купить за 2800 чипов</button>
+                </article>
+                <article class="shop-item">
+                  <div class="shop-item__name">Cold Cyan</div>
+                  <div class="shop-item__desc">Ледяной тон, максимум читаемости.</div>
+                  <button class="btn btn--ghost shop-preview" data-preview="cold_cyan">Превью 3 сек</button>
+                  <button class="btn btn--ghost shop-buy" data-item="cold_cyan" data-cost="3200">Купить за 3200 чипов</button>
+                </article>
+                <article class="shop-item">
+                  <div class="shop-item__name">Hacker Noire</div>
+                  <div class="shop-item__desc">Глитч-атмосфера, максимальный кибер.</div>
+                  <button class="btn btn--ghost shop-preview" data-preview="hacker_noire">Превью 3 сек</button>
+                  <button class="btn btn--ghost shop-buy" data-item="hacker_noire" data-cost="4200">Купить за 4200 чипов</button>
+                </article>
+                <article class="shop-item">
+                  <div class="shop-item__name">Пульсация кнопок</div>
+                  <div class="shop-item__desc">Активные зоны начинают дышать.</div>
+                  <button class="btn btn--ghost shop-preview" data-preview="btn_pulse">Превью 3 сек</button>
+                  <button class="btn btn--ghost shop-buy" data-item="btn_pulse" data-cost="1200">Купить за 1200 чипов</button>
+                </article>
+                <article class="shop-item">
+                  <div class="shop-item__name">Скан-линии</div>
+                  <div class="shop-item__desc">Лёгкий HUD-скан поверх интерфейса.</div>
+                  <button class="btn btn--ghost shop-preview" data-preview="scan_lines">Превью 3 сек</button>
+                  <button class="btn btn--ghost shop-buy" data-item="scan_lines" data-cost="1500">Купить за 1500 чипов</button>
+                </article>
+                <article class="shop-item">
+                  <div class="shop-item__name">Глитч-подсветка</div>
+                  <div class="shop-item__desc">Краткий глитч при важных событиях.</div>
+                  <button class="btn btn--ghost shop-preview" data-preview="glitch_glow">Превью 3 сек</button>
+                  <button class="btn btn--ghost shop-buy" data-item="glitch_glow" data-cost="2100">Купить за 2100 чипов</button>
+                </article>
+                <article class="shop-item">
+                  <div class="shop-item__name">Световой след</div>
+                  <div class="shop-item__desc">Шлейф при движении по интерфейсу.</div>
+                  <button class="btn btn--ghost shop-preview" data-preview="light_trail">Превью 3 сек</button>
+                  <button class="btn btn--ghost shop-buy" data-item="light_trail" data-cost="2400">Купить за 2400 чипов</button>
+                </article>
+              </div>
+              <div class="metric__label" id="shop-message">Выбери улучшение.</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="screen" data-screen="subscription">
+          <div class="panel panel--primary">
+            <div class="panel__header">
+              <div class="panel__title">Подписка</div>
+              <div class="chip chip--pink" id="subscription-current-chip">CORE</div>
+            </div>
+            <div class="panel__body">
+              <div class="metric__label" id="subscription-headline">
+                <span class="sub-highlight">ТЕКУЩИЙ УРОВЕНЬ</span>: CORE.
+                <span class="sub-highlight">МОДУЛЬ ТРЕНИРОВОК</span>: ПЕРЕЗАПУСК.
+              </div>
+              <div class="pending-upgrade hidden" id="subscription-pending">
+                <div class="pending-upgrade__title">Ожидается оплата</div>
+                <div class="pending-upgrade__text" id="subscription-pending-text">
+                  Открыта оплата CORE. Статус проверяется автоматически.
+                </div>
+                <button class="btn btn--primary pending-upgrade__btn" id="subscription-check-btn">
+                  Проверить оплату
+                </button>
+              </div>
+              <div class="sub-grid">
+                <article class="sub-card">
+                  <div class="sub-card__title">CORE</div>
+                  <div class="sub-card__desc">Идеально для тех, кто хочет попробовать или умеет сам.</div>
+                  <div class="sub-card__term">1 490 ₽ / мес · 2 990 ₽ / 3 мес</div>
+                  <div class="sub-card__sale">Скидка 33%: 3 мес за 2 990 ₽ вместо 4 470 ₽</div>
+                  <button class="btn btn--ghost" id="upgrade-core-btn" disabled>Открыть CORE · 1 490 ₽/мес</button>
+                  <div class="sub-card__inherit">Что входит:</div>
+                  <div class="sub-card__divider"></div>
+                  <ul class="sub-card__list">
+                    <li>Тренируйся без инвентаря и железа в любом удобном месте.</li>
+                    <li>Открывай доступ к новому уровню программы каждый день.</li>
+                    <li>Проходи ежедневные миссии и заполняй прогресс-бар.</li>
+                    <li>Отслеживай свой рост и путь до Битвы с Боссом.</li>
+                    <li>Пользуйся базой знаний и техникой упражнений внутри Mini App.</li>
+                  </ul>
+                </article>
+                <article class="sub-card">
+                  <div class="sub-card__title">BOOST</div>
+                  <div class="sub-card__desc">Для тех, кому нужна среда и страховка от ошибок.</div>
+                  <div class="sub-card__term">3 490 ₽ / мес · 6 990 ₽ / 3 мес</div>
+                  <div class="sub-card__sale">Скидка 33%: 3 мес за 6 990 ₽ вместо 10 470 ₽</div>
+                  <button class="btn btn--ghost" id="upgrade-boost-btn">Открыть BOOST · 3 490 ₽/мес</button>
+                  <div class="sub-card__inherit">Всё, что есть в CORE и:</div>
+                  <div class="sub-card__divider"></div>
+                  <ul class="sub-card__list">
+                    <li>Ускоряй прогресс через еженедельные разборы куратора.</li>
+                    <li>Вступай в закрытую группу единомышленников для мотивации.</li>
+                    <li>Исправляй ошибки в питании до того, как они затормозят результат.</li>
+                    <li>Получай приоритетную поддержку и ответы на вопросы в боте.</li>
+                    <li>Участвуй в закрытых челленджах внутри сообщества.</li>
+                  </ul>
+                </article>
+                <article class="sub-card">
+                  <div class="sub-card__title">ELITE</div>
+                  <div class="sub-card__desc">Полный аутсорс дисциплины и гарантия возврата.</div>
+                  <div class="sub-card__term">34 990 ₽ · разовая покупка</div>
+                  <div class="sub-card__sale">Разовый доступ без ежемесячного продления</div>
+                  <button class="btn btn--ghost" id="upgrade-elite-btn">Купить ELITE · 34 990 ₽</button>
+                  <div class="sub-card__inherit">Всё, что есть в BOOST и:</div>
+                  <div class="sub-card__divider"></div>
+                  <ul class="sub-card__list">
+                    <li>Делегируй контроль дисциплины мне лично (связь 24/7).</li>
+                    <li>Реализуй на 100% персональную стратегию под твой график.</li>
+                    <li>Оптимизируй быт с Консьерж-сервисом (помощь в ресторанах и магазинах).</li>
+                    <li>Влияй на продукт: доступ к закрытым встречам и материалам.</li>
+                    <li>Застрахуй свои вложения полной Гарантией возврата средств.</li>
+                  </ul>
+                </article>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="screen" data-screen="settings">
+          <div class="panel panel--primary">
+            <div class="panel__header">
+              <div class="panel__title">Системные настройки</div>
+              <div class="chip chip--cyan">SYSTEM</div>
+            </div>
+            <div class="panel__body">
+              <div class="settings-grid">
+                <div class="setting-item">
+                  <div class="setting-item__name">Напоминания бота</div>
+                  <div class="setting-item__desc">Пуш перед открытием окна бонуса</div>
+                  <button class="btn btn--ghost" id="settings-reminders-btn">Включены</button>
+                </div>
+                <div class="setting-item">
+                  <div class="setting-item__name">Окно миссии</div>
+                  <div class="setting-item__desc">Текущее окно прохождения</div>
+                  <div class="setting-item__val" id="settings-window-val">19:30–22:30</div>
+                </div>
+                <div class="setting-item">
+                  <div class="setting-item__name">Сброс миссии</div>
+                  <div class="setting-item__desc">Сбросить текущую миссию и начать заново</div>
+                  <button class="btn btn--ghost" id="settings-reset-mission">Сбросить</button>
+                </div>
+                <div class="setting-item">
+                  <div class="setting-item__name">Тур по интерфейсу</div>
+                  <div class="setting-item__desc">Показать основные кнопки и как ими пользоваться</div>
+                  <button class="btn btn--ghost" id="settings-tour-btn">Запустить тур</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <aside class="right-panel">
+        <div class="panel panel--secondary">
+          <div class="panel__header">
+            <div class="panel__title">Системные настройки</div>
+            <div class="chip chip--cyan">LIVE</div>
+          </div>
+          <div class="panel__body">
+            <div class="stat">
+              <div class="stat__label">Энергия</div>
+              <div class="stat__bar">
+                <span id="energy-bar" style="width: 60%"></span>
+              </div>
+              <div class="stat__value" id="energy-value">60% · готов к миссии</div>
+            </div>
+            <div class="stat">
+              <div class="stat__label">Гидратация</div>
+              <div class="stat__bar stat__bar--pink">
+                <span id="hydration-bar" style="width: 45%"></span>
+              </div>
+              <div class="stat__value" id="hydration-value">45% · ниже цели</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel panel--secondary">
+          <div class="panel__header">
+            <div class="panel__title">Арсенал</div>
+          </div>
+          <div class="panel__body">
+            <div class="arsenal-grid">
+              <div class="arsenal__item">
+                <span class="arsenal__key">МОДУЛЬ ТРЕНИРОВОК</span>
+                <span class="arsenal__val">Перезапуск</span>
+              </div>
+              <div class="arsenal__item">
+                <span class="arsenal__key">Модификатор недели</span>
+                <span class="arsenal__val" id="modifier-value">Не активен</span>
+              </div>
+              <div class="arsenal__item">
+                <span class="arsenal__key">Окно бонуса</span>
+                <span class="arsenal__val" id="arsenal-window">19:30–22:30</span>
+              </div>
+              <div class="arsenal__item">
+                <span class="arsenal__key">Чипы</span>
+                <span class="arsenal__val" id="arsenal-chips">420</span>
+              </div>
+            </div>
+            <button class="btn btn--ghost" id="arsenal-module-btn">Программа: Перезапуск</button>
+          </div>
+        </div>
+      </aside>
+
+      <footer class="dock">
+        <div class="dock__panel">
+          <div class="dock__title">Быстрые настройки</div>
+          <div class="dock__row">
+            <div class="slider">
+              <span>Гидра-контроль: выпито за день</span>
+              <div class="slider__track"><div class="slider__fill" id="hydration-fill" style="width: 45%"></div></div>
+              <input class="slider__input" id="hydration-input" type="range" min="0" max="2500" step="50" value="1200" />
+              <div class="slider__meta" id="hydration-meta">1200 мл / 2500 мл · 5 стаканов</div>
+            </div>
+          </div>
+        </div>
+      </footer>
+
+    </div>
+
+    <div class="modules-modal hidden" id="modules-modal" aria-hidden="true">
+      <div class="modules-modal__backdrop" id="modules-modal-backdrop"></div>
+      <div class="modules-modal__card">
+        <div class="modules-modal__head">
+          <div class="modules-modal__title">Программы тренировок</div>
+          <button class="btn btn--ghost modules-modal__close" id="modules-modal-close">Закрыть</button>
+        </div>
+        <div class="modules-modal__note">Переключение программы будет доступно в следующих версиях.</div>
+        <div class="modules-modal__grid">
+          <article class="module-card module-card--active">
+            <div class="module-card__title">Перезапуск</div>
+            <div class="module-card__desc">Мягкий старт без перегруза, 15 минут в день.</div>
+            <div class="chip chip--cyan">Текущая программа</div>
+          </article>
+          <article class="module-card module-card--locked">
+            <div class="module-card__title">Ешь и расти</div>
+            <div class="module-card__desc">Набор мышечной массы: силовой фокус + питание.</div>
+            <div class="chip chip--pink">Скоро</div>
+          </article>
+          <article class="module-card module-card--locked">
+            <div class="module-card__title">Сушка PRO</div>
+            <div class="module-card__desc">Углублённый режим рельефа с прогрессией по неделям.</div>
+            <div class="chip chip--pink">Скоро</div>
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="modules-modal hidden" id="demo-paywall" aria-hidden="true">
+      <div class="modules-modal__backdrop" id="demo-paywall-backdrop"></div>
+      <div class="modules-modal__card">
+        <div class="modules-modal__head">
+          <div class="modules-modal__title">Демо завершено: 3/3</div>
+          <button class="btn btn--ghost modules-modal__close" id="demo-paywall-close">Позже</button>
+        </div>
+        <div class="modules-modal__note">
+          Ты прошёл бесплатные уровни. Чтобы открыть уровень 4+ и продолжать прогресс, нужен платный тариф.
+        </div>
+        <div class="modules-modal__grid">
+          <article class="module-card module-card--active">
+            <div class="module-card__title">Открой полный доступ</div>
+            <div class="module-card__desc">CORE / BOOST / ELITE — выбирай формат и продолжай цикл без остановки.</div>
+            <button class="btn btn--primary" id="demo-paywall-open-btn">Открыть тарифы</button>
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="mobile-drawer hidden" id="mobile-drawer" aria-hidden="true">
+      <div class="mobile-drawer__backdrop" id="mobile-drawer-backdrop"></div>
+      <aside class="mobile-drawer__panel">
+        <div class="mobile-drawer__head">
+          <div class="mobile-drawer__title">Навигация</div>
+          <button class="btn btn--ghost mobile-drawer__close" id="mobile-drawer-close">Закрыть</button>
+        </div>
+        <div class="mobile-drawer__list">
+          <button class="nav__btn active" data-nav="home">Дом</button>
+          <button class="nav__btn" data-nav="mission">Миссия</button>
+          <button class="nav__btn" data-nav="progress">Прогресс</button>
+          <button class="nav__btn" data-nav="shop">Магазин</button>
+          <button class="nav__btn" data-nav="subscription">Подписка</button>
+          <button class="nav__btn" data-nav="settings">Настройки</button>
+        </div>
+      </aside>
+    </div>
+
+    <div class="tour hidden" id="tour-overlay" aria-hidden="true">
+      <div class="tour__shade tour__shade--top" id="tour-shade-top"></div>
+      <div class="tour__shade tour__shade--left" id="tour-shade-left"></div>
+      <div class="tour__shade tour__shade--right" id="tour-shade-right"></div>
+      <div class="tour__shade tour__shade--bottom" id="tour-shade-bottom"></div>
+      <div class="tour__spotlight" id="tour-spotlight"></div>
+      <div class="tour__card">
+        <div class="tour__step" id="tour-step">Шаг 1 / 5</div>
+        <div class="tour__title" id="tour-title">Навигация</div>
+        <div class="tour__text" id="tour-text">Короткий тур по главным кнопкам.</div>
+        <div class="tour__actions">
+          <button class="btn btn--ghost" id="tour-skip-btn">Пропустить</button>
+          <button class="btn btn--primary" id="tour-next-btn">Дальше</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="app.js?v=20260212e"></script>
+  </body>
+</html>
