@@ -322,9 +322,17 @@ function triggerHaptic(kind = "soft") {
 function openExternalLink(url) {
   if (!url) return;
   const webApp = getTelegramWebApp();
-  if (webApp && typeof webApp.openLink === "function") {
-    webApp.openLink(url, { try_instant_view: false });
-    return;
+  if (webApp) {
+    // t.me links should be opened via Telegram API, otherwise iOS may open them in an in-app browser
+    // and break the intended "open another Mini App" flow (e.g., Tribute checkout).
+    if (/^https?:\\/\\/t\\.me\\//i.test(url) && typeof webApp.openTelegramLink === "function") {
+      webApp.openTelegramLink(url);
+      return;
+    }
+    if (typeof webApp.openLink === "function") {
+      webApp.openLink(url, { try_instant_view: false });
+      return;
+    }
   }
   window.open(url, "_blank", "noopener,noreferrer");
 }
