@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any
 
 from fastapi import FastAPI, HTTPException, Query, Request
+from fastapi.responses import Response
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -331,6 +332,13 @@ def is_success_event(payload: dict[str, Any]) -> bool:
 @app.get("/api/health")
 def health() -> dict[str, Any]:
     return {"ok": True, "service": "mini-app-prototype"}
+
+
+@app.head("/api/health")
+def health_head() -> Response:
+    # Некоторые аптайм-мониторы/прокси делают HEAD-запросы.
+    # Явно поддерживаем, чтобы keep-alive не ловил 404.
+    return Response(status_code=200)
 
 
 @app.get("/api/access/status")
