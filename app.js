@@ -540,7 +540,10 @@ async function checkAccessStatus({ manual = false, refresh = false } = {}) {
 function startAccessPolling() {
   if (paymentStatusTimer) clearInterval(paymentStatusTimer);
   paymentStatusTimer = setInterval(() => {
-    checkAccessStatus({ manual: false });
+    const pendingTier = getPendingUpgradeTier();
+    // While waiting for payment, periodically refresh using membership-based sync (if available).
+    // This removes the need for the user to manually press "Проверить оплату" after checkout.
+    checkAccessStatus({ manual: false, refresh: Boolean(pendingTier) });
   }, PAYMENT_STATUS_POLL_MS);
 }
 
