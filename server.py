@@ -533,6 +533,14 @@ def access_status(
                 verified,
                 transition.get("tier_after"),
             )
+            if transition.get("tier_before") != transition.get("tier_after"):
+                send_telegram_message(
+                    resolved_id,
+                    (
+                        f"Доступ обновлен: {transition.get('tier_after')} активирован.\n\n"
+                        "Открой Mini App и продолжай уровни."
+                    ),
+                )
     return {"ok": True, **get_status(resolved_id.strip())}
 
 
