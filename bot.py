@@ -11,6 +11,8 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update, WebAppI
 from telegram.ext import Application, CallbackQueryHandler, CommandHandler, ContextTypes
 
 
+ASSET_VERSION = "20260213a"
+
 TRIBUTE_LINKS = {
     "CORE": {
         "telegram": "https://t.me/tribute/app?startapp=sNQO",
@@ -53,7 +55,7 @@ SETTINGS = load_settings()
 
 
 def build_main_keyboard() -> InlineKeyboardMarkup:
-    webapp_link = f"{SETTINGS.miniapp_url}/index-motif.html"
+    webapp_link = f"{SETTINGS.miniapp_url}/index-motif.html?v={ASSET_VERSION}"
     return InlineKeyboardMarkup(
         [
             [InlineKeyboardButton("Открыть Mini App", web_app=WebAppInfo(url=webapp_link))],

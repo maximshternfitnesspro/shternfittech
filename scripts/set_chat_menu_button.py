@@ -4,7 +4,10 @@ import json
 import os
 import sys
 import urllib.error
+import urllib.parse
 import urllib.request
+
+ASSET_VERSION = "20260213a"
 
 
 def fail(message: str) -> None:
@@ -20,8 +23,17 @@ if not token:
 if not webapp_url:
     fail("MINIAPP_WEBAPP_URL is required")
 
-if not webapp_url.endswith("/index-motif.html"):
-    webapp_url = f"{webapp_url}/index-motif.html"
+# Normalize to .../index-motif.html and append cache-busting query param ?v=
+parsed = urllib.parse.urlparse(webapp_url)
+path = parsed.path or ""
+base = webapp_url
+if not path.endswith("/index-motif.html"):
+    base = webapp_url.rstrip("/") + "/index-motif.html"
+
+parsed = urllib.parse.urlparse(base)
+query = dict(urllib.parse.parse_qsl(parsed.query))
+query["v"] = ASSET_VERSION
+webapp_url = urllib.parse.urlunparse(parsed._replace(query=urllib.parse.urlencode(query)))
 
 payload = {
     "menu_button": {
