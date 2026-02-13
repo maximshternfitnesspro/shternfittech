@@ -32,6 +32,7 @@ WEBHOOK_TOKEN = os.getenv("MINIAPP_TRIBUTE_WEBHOOK_TOKEN", "")
 TELEGRAM_BOT_TOKEN = (os.getenv("MINIAPP_NOTIFY_BOT_TOKEN") or os.getenv("MINIAPP_BOT_TOKEN") or "").strip()
 NOTIFY_ON_PAYMENT = os.getenv("MINIAPP_NOTIFY_ON_PAYMENT", "1").strip() not in {"0", "false", "False", "no", "NO"}
 TRIBUTE_API_KEY = (os.getenv("MINIAPP_TRIBUTE_API_KEY") or "").strip()
+TRIBUTE_WEBHOOK_SIGNATURE_SECRET = (os.getenv("MINIAPP_TRIBUTE_WEBHOOK_SIGNATURE_SECRET") or "").strip()
 ADMIN_TOKEN = (os.getenv("MINIAPP_ADMIN_TOKEN") or "").strip()
 
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO").upper())
@@ -100,13 +101,15 @@ def verify_tribute_signature(raw_body: bytes, signature_header: str | None) -> b
     Tribute signs webhook requests with HMAC-SHA256 using your API key.
     Verification is enabled only when MINIAPP_TRIBUTE_API_KEY is set.
     """
-    if not TRIBUTE_API_KEY:
+    # We already have a shared-secret query param token, so signature verification is optional.
+    # Use a separate secret to avoid coupling with the public API key used for outbound calls.
+    if not TRIBUTE_WEBHOOK_SIGNATURE_SECRET:
         return True
     if not signature_header:
         return False
 
     provided = str(signature_header).strip().lower()
-    expected = hmac.new(TRIBUTE_API_KEY.encode("utf-8"), raw_body, hashlib.sha256).hexdigest().lower()
+    expected = hmac.new(TRIBUTE_WEBHOOK_SIGNATURE_SECRET.encode("utf-8"), raw_body, hashlib.sha256).hexdigest().lower()
     return hmac.compare_digest(provided, expected)
 
 
