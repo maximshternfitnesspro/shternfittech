@@ -141,6 +141,12 @@ async def plans_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         await update.message.reply_text(text)
 
 
+async def id_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if not update.effective_user or not update.message:
+        return
+    await update.message.reply_text(f"Твой TG ID: {update.effective_user.id}")
+
+
 async def callbacks(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not update.callback_query:
         return
@@ -159,6 +165,7 @@ def main() -> None:
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("status", status_cmd))
     app.add_handler(CommandHandler("plans", plans_cmd))
+    app.add_handler(CommandHandler("id", id_cmd))
     app.add_handler(CallbackQueryHandler(callbacks))
     app.run_polling(allowed_updates=Update.ALL_TYPES)
 
