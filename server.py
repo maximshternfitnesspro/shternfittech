@@ -191,6 +191,14 @@ def telegram_get_chat_member(chat_id: str, tg_user_id: str) -> dict[str, Any] | 
     except (urllib.error.URLError, TimeoutError, json.JSONDecodeError):
         return None
     if not isinstance(payload, dict) or not payload.get("ok"):
+        if isinstance(payload, dict):
+            logger.info(
+                "getChatMember failed chat_id=%s tg_user_id=%s error_code=%s description=%s",
+                chat_id,
+                tg_user_id,
+                payload.get("error_code"),
+                payload.get("description"),
+            )
         return None
     result = payload.get("result")
     return result if isinstance(result, dict) else None
