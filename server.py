@@ -208,14 +208,33 @@ def is_active_member(chat_member: dict[str, Any] | None) -> bool:
 
 
 def resolve_tier_by_membership(tg_user_id: str) -> str | None:
-    if ELITE_CHAT_ID and is_active_member(telegram_get_chat_member(ELITE_CHAT_ID, tg_user_id)):
-        return "ELITE"
-    if BOOST_CHAT_ID and is_active_member(telegram_get_chat_member(BOOST_CHAT_ID, tg_user_id)):
-        return "BOOST"
-    if CORE_CHAT_ID and is_active_member(telegram_get_chat_member(CORE_CHAT_ID, tg_user_id)):
-        return "CORE"
+    unknown = False
+
+    if ELITE_CHAT_ID:
+        elite_member = telegram_get_chat_member(ELITE_CHAT_ID, tg_user_id)
+        if elite_member is None:
+            unknown = True
+        elif is_active_member(elite_member):
+            return "ELITE"
+
+    if BOOST_CHAT_ID:
+        boost_member = telegram_get_chat_member(BOOST_CHAT_ID, tg_user_id)
+        if boost_member is None:
+            unknown = True
+        elif is_active_member(boost_member):
+            return "BOOST"
+
+    if CORE_CHAT_ID:
+        core_member = telegram_get_chat_member(CORE_CHAT_ID, tg_user_id)
+        if core_member is None:
+            unknown = True
+        elif is_active_member(core_member):
+            return "CORE"
+
     if CORE_CHAT_ID or BOOST_CHAT_ID or ELITE_CHAT_ID:
-        return "DEMO"
+        # If we can't confirm membership due to an API error, don't downgrade access.
+        return None if unknown else "DEMO"
+
     return None
 
 
