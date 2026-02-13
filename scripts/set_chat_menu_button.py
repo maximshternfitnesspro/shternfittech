@@ -7,7 +7,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
-ASSET_VERSION = "20260213a"
+ASSET_VERSION = "20260213b"
 
 
 def fail(message: str) -> None:

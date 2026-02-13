@@ -11,7 +11,7 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update, WebAppI
 from telegram.ext import Application, CallbackQueryHandler, CommandHandler, ContextTypes
 
 
-ASSET_VERSION = "20260213a"
+ASSET_VERSION = "20260213b"
 
 TRIBUTE_LINKS = {
     "CORE": {

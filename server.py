@@ -8,6 +8,7 @@ import os
 import sqlite3
 import urllib.error
 import urllib.request
+import urllib.parse
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -34,6 +35,12 @@ NOTIFY_ON_PAYMENT = os.getenv("MINIAPP_NOTIFY_ON_PAYMENT", "1").strip() not in {
 TRIBUTE_API_KEY = (os.getenv("MINIAPP_TRIBUTE_API_KEY") or "").strip()
 TRIBUTE_WEBHOOK_SIGNATURE_SECRET = (os.getenv("MINIAPP_TRIBUTE_WEBHOOK_SIGNATURE_SECRET") or "").strip()
 ADMIN_TOKEN = (os.getenv("MINIAPP_ADMIN_TOKEN") or "").strip()
+
+# Optional: use Telegram channel/group membership as the source of truth for access.
+# This works well with Tribute because Tribute adds/removes users from the paid chat automatically.
+CORE_CHAT_ID = (os.getenv("MINIAPP_CORE_CHAT_ID") or "").strip()
+BOOST_CHAT_ID = (os.getenv("MINIAPP_BOOST_CHAT_ID") or "").strip()
+ELITE_CHAT_ID = (os.getenv("MINIAPP_ELITE_CHAT_ID") or "").strip()
 
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO").upper())
 logger = logging.getLogger("miniapp")
@@ -111,6 +118,144 @@ def verify_tribute_signature(raw_body: bytes, signature_header: str | None) -> b
     provided = str(signature_header).strip().lower()
     expected = hmac.new(TRIBUTE_WEBHOOK_SIGNATURE_SECRET.encode("utf-8"), raw_body, hashlib.sha256).hexdigest().lower()
     return hmac.compare_digest(provided, expected)
+
+
+def validate_telegram_init_data(init_data: str) -> dict[str, str] | None:
+    """
+    Validates Telegram Mini App initData (HMAC-SHA256).
+
+    Telegram docs:
+    secret_key = HMAC_SHA256(key="WebAppData", msg=bot_token)
+    hash = hex(HMAC_SHA256(key=secret_key, msg=data_check_string))
+    """
+    if not TELEGRAM_BOT_TOKEN:
+        return None
+    init_data = (init_data or "").strip()
+    if not init_data:
+        return None
+
+    pairs = urllib.parse.parse_qsl(init_data, keep_blank_values=True)
+    data: dict[str, str] = {k: v for k, v in pairs}
+    received_hash = data.pop("hash", None)
+    if not received_hash:
+        return None
+
+    data_check_string = "\n".join([f"{k}={data[k]}" for k in sorted(data.keys())])
+    secret_key = hmac.new(b"WebAppData", TELEGRAM_BOT_TOKEN.encode("utf-8"), hashlib.sha256).digest()
+    computed_hash = hmac.new(secret_key, data_check_string.encode("utf-8"), hashlib.sha256).hexdigest()
+    if not hmac.compare_digest(computed_hash, received_hash):
+        return None
+    return data
+
+
+def resolve_tg_user_id(request: Request, fallback_tg_user_id: str | None) -> tuple[str, bool]:
+    """
+    Prefer verified Telegram initData, fall back to explicit tg_user_id for non-Telegram debug/testing.
+    """
+    init_data = (
+        request.headers.get("x-tg-init-data")
+        or request.headers.get("X-Tg-Init-Data")
+        or request.query_params.get("init_data")
+    )
+    if init_data:
+        validated = validate_telegram_init_data(init_data)
+        if not validated:
+            raise HTTPException(status_code=401, detail="invalid init data")
+        user_raw = validated.get("user")
+        if not user_raw:
+            raise HTTPException(status_code=400, detail="init data missing user")
+        try:
+            user_obj = json.loads(user_raw)
+        except json.JSONDecodeError:
+            raise HTTPException(status_code=400, detail="init data user json invalid") from None
+        tg_user_id = extract_first_int(user_obj)
+        if not tg_user_id:
+            raise HTTPException(status_code=400, detail="init data user id missing")
+        return tg_user_id, True
+
+    tg_user_id = (fallback_tg_user_id or "").strip()
+    if not tg_user_id:
+        raise HTTPException(status_code=400, detail="tg_user_id required")
+    return tg_user_id, False
+
+
+def telegram_get_chat_member(chat_id: str, tg_user_id: str) -> dict[str, Any] | None:
+    if not TELEGRAM_BOT_TOKEN or not chat_id:
+        return None
+    query = urllib.parse.urlencode({"chat_id": chat_id, "user_id": tg_user_id})
+    url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/getChatMember?{query}"
+    req = urllib.request.Request(url=url, method="GET")
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            payload = json.loads(resp.read().decode("utf-8") or "{}")
+    except (urllib.error.URLError, TimeoutError, json.JSONDecodeError):
+        return None
+    if not isinstance(payload, dict) or not payload.get("ok"):
+        return None
+    result = payload.get("result")
+    return result if isinstance(result, dict) else None
+
+
+def is_active_member(chat_member: dict[str, Any] | None) -> bool:
+    if not chat_member:
+        return False
+    status = str(chat_member.get("status") or "").lower()
+    if status in {"creator", "administrator", "member"}:
+        return True
+    if status == "restricted":
+        return bool(chat_member.get("is_member"))
+    return False
+
+
+def resolve_tier_by_membership(tg_user_id: str) -> str | None:
+    if ELITE_CHAT_ID and is_active_member(telegram_get_chat_member(ELITE_CHAT_ID, tg_user_id)):
+        return "ELITE"
+    if BOOST_CHAT_ID and is_active_member(telegram_get_chat_member(BOOST_CHAT_ID, tg_user_id)):
+        return "BOOST"
+    if CORE_CHAT_ID and is_active_member(telegram_get_chat_member(CORE_CHAT_ID, tg_user_id)):
+        return "CORE"
+    if CORE_CHAT_ID or BOOST_CHAT_ID or ELITE_CHAT_ID:
+        return "DEMO"
+    return None
+
+
+def upsert_tier_exact(tg_user_id: str, tier: str, payload: Any, source: str) -> dict[str, str]:
+    tier = normalize_tier(tier) or "DEMO"
+    ts = now_iso()
+    payload_json = json_dumps(payload)
+
+    with db() as conn:
+        row = conn.execute(
+            "SELECT tier, pending_tier, pending_since FROM access_state WHERE tg_user_id = ?",
+            (tg_user_id,),
+        ).fetchone()
+        current = row["tier"] if row else "DEMO"
+        pending = row["pending_tier"] if row else None
+        pending_since_prev = row["pending_since"] if row else None
+
+        # ELITE is one-time: never downgrade it automatically.
+        final_tier = current if current == "ELITE" and tier != "ELITE" else tier
+
+        clear_pending = pending is not None and TIER_ORDER.get(final_tier, 0) >= TIER_ORDER.get(str(pending).upper(), 0)
+        pending_tier = None if clear_pending else pending
+        pending_since = None if clear_pending else pending_since_prev
+
+        conn.execute(
+            """
+            INSERT INTO access_state (tg_user_id, tier, pending_tier, pending_since, updated_at, source, last_payload)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(tg_user_id) DO UPDATE SET
+              tier=excluded.tier,
+              pending_tier=excluded.pending_tier,
+              pending_since=excluded.pending_since,
+              updated_at=excluded.updated_at,
+              source=excluded.source,
+              last_payload=excluded.last_payload
+            """,
+            (tg_user_id, final_tier, pending_tier, pending_since, ts, source, payload_json),
+        )
+
+    return {"tier_before": current, "tier_after": final_tier}
 
 
 def send_telegram_message(tg_user_id: str, text: str) -> bool:
@@ -367,8 +512,28 @@ def health_head() -> Response:
 
 
 @app.get("/api/access/status")
-def access_status(tg_user_id: str = Query(..., min_length=1, max_length=64)) -> dict[str, Any]:
-    return {"ok": True, **get_status(tg_user_id.strip())}
+def access_status(
+    request: Request,
+    tg_user_id: str | None = Query(None, min_length=1, max_length=64),
+    refresh: int = Query(0, ge=0, le=1),
+) -> dict[str, Any]:
+    resolved_id, verified = resolve_tg_user_id(request, tg_user_id)
+    if refresh:
+        resolved_tier = resolve_tier_by_membership(resolved_id)
+        if resolved_tier:
+            transition = upsert_tier_exact(
+                resolved_id,
+                resolved_tier,
+                {"source": "telegram_membership", "verified": verified, "resolved_tier": resolved_tier},
+                source="telegram_membership",
+            )
+            logger.info(
+                "access_refresh tg_user_id=%s verified=%s tier=%s",
+                resolved_id,
+                verified,
+                transition.get("tier_after"),
+            )
+    return {"ok": True, **get_status(resolved_id.strip())}
 
 
 @app.post("/api/access/pending")
@@ -376,8 +541,11 @@ async def access_pending(request: Request) -> dict[str, Any]:
     body = await request.json()
     tg_user_id = str(body.get("tg_user_id", "")).strip()
     tier = normalize_tier(body.get("tier"))
-    if not tg_user_id or not tier:
+    if not tier:
         raise HTTPException(status_code=400, detail="tg_user_id и tier обязательны")
+
+    if not tg_user_id:
+        tg_user_id, _verified = resolve_tg_user_id(request, None)
 
     upsert_pending(tg_user_id, tier)
     return {"ok": True, **get_status(tg_user_id)}

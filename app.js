@@ -357,6 +357,36 @@ function normalizeTier(value) {
   return TIER_RANK[tier] !== undefined ? tier : null;
 }
 
+function safeDecodeURIComponent(value) {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+}
+
+function getTelegramInitData() {
+  const webApp = getTelegramWebApp();
+  if (webApp && typeof webApp.initData === "string" && webApp.initData.trim()) {
+    return webApp.initData;
+  }
+
+  // Some WebViews expose initData as tgWebAppData in URL hash/query.
+  const params = new URLSearchParams(window.location.search);
+  const fromQuery = params.get("tgWebAppData") || params.get("init_data");
+  if (fromQuery) {
+    return safeDecodeURIComponent(fromQuery);
+  }
+
+  const hash = window.location.hash || "";
+  const match = hash.match(/(?:^|[#&])tgWebAppData=([^&]+)/);
+  if (match && match[1]) {
+    return safeDecodeURIComponent(match[1]);
+  }
+
+  return "";
+}
+
 function getTelegramUserId() {
   if (cachedTelegramUserId) return cachedTelegramUserId;
 
@@ -401,12 +431,17 @@ function applyConfirmedTier(tier) {
 
 async function markPendingUpgradeRemote(tier) {
   const tgUserId = getTelegramUserId();
-  if (!tgUserId) return;
+  const initData = getTelegramInitData();
+  if (!tgUserId && !initData) return;
 
+  const headers = { "Content-Type": "application/json" };
+  if (initData) headers["X-Tg-Init-Data"] = initData;
+
+  const payload = tgUserId ? { tg_user_id: tgUserId, tier } : { tier };
   const response = await fetch("/api/access/pending", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ tg_user_id: tgUserId, tier }),
+    headers,
+    body: JSON.stringify(payload),
   });
   if (!response.ok) throw new Error(`pending_status_${response.status}`);
   backendReachable = true;
@@ -459,9 +494,12 @@ function applyAccessStatus(status, { manual = false } = {}) {
   }
 }
 
-async function checkAccessStatus({ manual = false } = {}) {
+async function checkAccessStatus({ manual = false, refresh = false } = {}) {
   const tgUserId = getTelegramUserId();
-  if (!tgUserId) {
+  const initData = getTelegramInitData();
+  const hasInitData = Boolean(initData && String(initData).trim());
+
+  if (!tgUserId && !hasInitData) {
     if (manual && shopMessage) {
       shopMessage.textContent = "Проверка оплаты доступна только внутри Telegram Mini App.";
     }
@@ -474,8 +512,15 @@ async function checkAccessStatus({ manual = false } = {}) {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 4500);
   try {
-    const response = await fetch(`/api/access/status?tg_user_id=${encodeURIComponent(tgUserId)}`, {
+    const shouldRefresh = manual || refresh;
+    const url = hasInitData
+      ? `/api/access/status?refresh=${shouldRefresh ? "1" : "0"}`
+      : `/api/access/status?tg_user_id=${encodeURIComponent(tgUserId)}&refresh=${shouldRefresh ? "1" : "0"}`;
+    const headers = hasInitData ? { "X-Tg-Init-Data": initData } : undefined;
+
+    const response = await fetch(url, {
       signal: controller.signal,
+      headers,
     });
     if (!response.ok) throw new Error(`status_http_${response.status}`);
     const payload = await response.json();
@@ -1160,9 +1205,11 @@ function render() {
 
   if (subscriptionPending && subscriptionPendingText && subscriptionCheckBtn) {
     const tgUserId = getTelegramUserId();
+    const initData = getTelegramInitData();
+    const canVerify = Boolean(tgUserId || (initData && String(initData).trim()));
     if (pendingTier) {
       subscriptionPending.classList.remove("hidden");
-      if (!tgUserId) {
+      if (!canVerify) {
         subscriptionPendingText.textContent = `Открыта оплата ${pendingTier}. Для авто-проверки открой Mini App из Telegram.`;
       } else if (!backendReachable) {
         subscriptionPendingText.textContent = `Открыта оплата ${pendingTier}. Сервер проверки временно недоступен. Нажми «Проверить оплату».`;
@@ -1170,7 +1217,7 @@ function render() {
         subscriptionPendingText.textContent = `Открыта оплата ${pendingTier}. После оплаты нажми «Проверить оплату».`;
       }
       subscriptionCheckBtn.textContent = `Проверить оплату ${pendingTier}`;
-      subscriptionCheckBtn.disabled = !tgUserId;
+      subscriptionCheckBtn.disabled = !canVerify;
     } else {
       subscriptionPending.classList.add("hidden");
       subscriptionCheckBtn.disabled = true;
@@ -2142,6 +2189,6 @@ if (!motifReady) {
       console.error("render_failed", error);
     }
     startAccessPolling();
-    checkAccessStatus({ manual: false });
+    checkAccessStatus({ manual: false, refresh: true });
   })();
 }
