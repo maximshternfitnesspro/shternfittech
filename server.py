@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import hashlib
+import hmac
 import json
+import logging
 import os
 import sqlite3
 import urllib.error
@@ -29,6 +31,11 @@ TIER_HINTS = {
 WEBHOOK_TOKEN = os.getenv("MINIAPP_TRIBUTE_WEBHOOK_TOKEN", "")
 TELEGRAM_BOT_TOKEN = (os.getenv("MINIAPP_NOTIFY_BOT_TOKEN") or os.getenv("MINIAPP_BOT_TOKEN") or "").strip()
 NOTIFY_ON_PAYMENT = os.getenv("MINIAPP_NOTIFY_ON_PAYMENT", "1").strip() not in {"0", "false", "False", "no", "NO"}
+TRIBUTE_API_KEY = (os.getenv("MINIAPP_TRIBUTE_API_KEY") or "").strip()
+ADMIN_TOKEN = (os.getenv("MINIAPP_ADMIN_TOKEN") or "").strip()
+
+logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO").upper())
+logger = logging.getLogger("miniapp")
 
 app = FastAPI(title="Mini App Backend", version="1.0.0")
 
@@ -86,6 +93,21 @@ def json_dumps(payload: Any) -> str:
         return json.dumps(payload, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
     except Exception:
         return "{}"
+
+
+def verify_tribute_signature(raw_body: bytes, signature_header: str | None) -> bool:
+    """
+    Tribute signs webhook requests with HMAC-SHA256 using your API key.
+    Verification is enabled only when MINIAPP_TRIBUTE_API_KEY is set.
+    """
+    if not TRIBUTE_API_KEY:
+        return True
+    if not signature_header:
+        return False
+
+    provided = str(signature_header).strip().lower()
+    expected = hmac.new(TRIBUTE_API_KEY.encode("utf-8"), raw_body, hashlib.sha256).hexdigest().lower()
+    return hmac.compare_digest(provided, expected)
 
 
 def send_telegram_message(tg_user_id: str, text: str) -> bool:
@@ -363,12 +385,22 @@ async def tribute_webhook(request: Request, token: str | None = None) -> JSONRes
     if WEBHOOK_TOKEN and token != WEBHOOK_TOKEN:
         raise HTTPException(status_code=403, detail="invalid webhook token")
 
-    payload = await request.json()
+    raw_body = await request.body()
+    signature = request.headers.get("trbt-signature") or request.headers.get("Trbt-Signature")
+    if not verify_tribute_signature(raw_body, signature):
+        logger.warning("tribute_webhook rejected: invalid signature path=%s", request.url.path)
+        raise HTTPException(status_code=401, detail="invalid signature")
+
+    try:
+        payload = json.loads(raw_body.decode("utf-8") or "{}")
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="invalid json") from None
     if not isinstance(payload, dict):
         raise HTTPException(status_code=400, detail="invalid payload")
 
     event_key, duplicate = remember_event(payload)
     if duplicate:
+        logger.info("tribute_webhook duplicate event_key=%s path=%s", event_key, request.url.path)
         return JSONResponse({"ok": True, "duplicate": True, "event_key": event_key})
 
     # Часть интеграций кладёт реальные поля в payload.data / payload.payload
@@ -381,6 +413,13 @@ async def tribute_webhook(request: Request, token: str | None = None) -> JSONRes
     success = is_success_event(merged_payload)
 
     if not tg_user_id:
+        logger.info(
+            "tribute_webhook accepted=false reason=telegram_user_id_not_found event_key=%s path=%s tier=%s success=%s",
+            event_key,
+            request.url.path,
+            tier,
+            success,
+        )
         return JSONResponse(
             {
                 "ok": True,
@@ -400,6 +439,14 @@ async def tribute_webhook(request: Request, token: str | None = None) -> JSONRes
             tier = pending_tier
 
     if not success or not tier:
+        logger.info(
+            "tribute_webhook accepted=false reason=payment_not_confirmed_or_tier_missing tg_user_id=%s event_key=%s path=%s tier=%s success=%s",
+            tg_user_id,
+            event_key,
+            request.url.path,
+            tier,
+            success,
+        )
         return JSONResponse(
             {
                 "ok": True,
@@ -414,6 +461,13 @@ async def tribute_webhook(request: Request, token: str | None = None) -> JSONRes
 
     transition = upsert_paid(tg_user_id, tier, merged_payload)
     tier_after = transition.get("tier_after", tier)
+    logger.info(
+        "tribute_webhook accepted=true tg_user_id=%s tier=%s event_key=%s path=%s",
+        tg_user_id,
+        tier_after,
+        event_key,
+        request.url.path,
+    )
     send_telegram_message(
         tg_user_id,
         (
@@ -432,6 +486,42 @@ async def tribute_webhook(request: Request, token: str | None = None) -> JSONRes
             "status": get_status(tg_user_id),
         }
     )
+
+
+@app.post("/webhook/tribute")
+async def tribute_webhook_compat(request: Request, token: str | None = None) -> JSONResponse:
+    # Backward-compatible path: some Tribute configs used /webhook/tribute.
+    return await tribute_webhook(request, token=token)
+
+
+@app.get("/api/admin/grant")
+def admin_grant_get(
+    tg_user_id: str = Query(..., min_length=1, max_length=64),
+    tier: str = Query(..., min_length=1, max_length=16),
+    token: str | None = None,
+) -> dict[str, Any]:
+    if not ADMIN_TOKEN or token != ADMIN_TOKEN:
+        raise HTTPException(status_code=403, detail="forbidden")
+    normalized = normalize_tier(tier)
+    if not normalized:
+        raise HTTPException(status_code=400, detail="invalid tier")
+    upsert_paid(tg_user_id.strip(), normalized, {"source": "admin_grant", "tier": normalized})
+    logger.info("admin_grant tg_user_id=%s tier=%s", tg_user_id.strip(), normalized)
+    return {"ok": True, **get_status(tg_user_id.strip())}
+
+
+@app.post("/api/admin/grant")
+async def admin_grant_post(request: Request, token: str | None = None) -> dict[str, Any]:
+    if not ADMIN_TOKEN or token != ADMIN_TOKEN:
+        raise HTTPException(status_code=403, detail="forbidden")
+    body = await request.json()
+    tg_user_id = str(body.get("tg_user_id", "")).strip()
+    tier = normalize_tier(body.get("tier"))
+    if not tg_user_id or not tier:
+        raise HTTPException(status_code=400, detail="tg_user_id и tier обязательны")
+    upsert_paid(tg_user_id, tier, {"source": "admin_grant", "tier": tier})
+    logger.info("admin_grant tg_user_id=%s tier=%s", tg_user_id, tier)
+    return {"ok": True, **get_status(tg_user_id)}
 
 
 app.mount("/", StaticFiles(directory=BASE_DIR, html=True), name="frontend")
