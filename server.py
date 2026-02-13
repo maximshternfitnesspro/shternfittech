@@ -543,9 +543,12 @@ def access_status(
     request: Request,
     tg_user_id: str | None = Query(None, min_length=1, max_length=64),
     refresh: int = Query(0, ge=0, le=1),
+    token: str | None = None,
 ) -> dict[str, Any]:
     resolved_id, verified = resolve_tg_user_id(request, tg_user_id)
     if refresh:
+        if not verified and (not ADMIN_TOKEN or token != ADMIN_TOKEN):
+            raise HTTPException(status_code=403, detail="forbidden")
         resolved_tier = resolve_tier_by_membership(resolved_id)
         if resolved_tier:
             transition = upsert_tier_exact(
