@@ -591,7 +591,8 @@ async def access_pending(request: Request) -> dict[str, Any]:
 
 @app.post("/api/tribute/webhook")
 async def tribute_webhook(request: Request, token: str | None = None) -> JSONResponse:
-    if WEBHOOK_TOKEN and token != WEBHOOK_TOKEN:
+    token_norm = token.strip() if isinstance(token, str) else token
+    if WEBHOOK_TOKEN and token_norm != WEBHOOK_TOKEN:
         raise HTTPException(status_code=403, detail="invalid webhook token")
 
     raw_body = await request.body()
@@ -697,10 +698,42 @@ async def tribute_webhook(request: Request, token: str | None = None) -> JSONRes
     )
 
 
+def _tribute_webhook_ping(token: str | None = None) -> JSONResponse:
+    """
+    Human-friendly GET handler for callback URL.
+
+    Tribute will call this endpoint with POST; this is only to avoid confusion
+    when someone opens the callback URL in a browser.
+    """
+
+    token_norm = token.strip() if isinstance(token, str) else token
+    if WEBHOOK_TOKEN and token_norm != WEBHOOK_TOKEN:
+        raise HTTPException(status_code=403, detail="invalid webhook token")
+    return JSONResponse(
+        {
+            "ok": True,
+            "service": "mini-app-prototype",
+            "webhook": "tribute",
+            "hint": "Use POST for webhook delivery. GET is for status only.",
+        }
+    )
+
+
+@app.get("/api/tribute/webhook")
+def tribute_webhook_get(token: str | None = None) -> JSONResponse:
+    return _tribute_webhook_ping(token=token)
+
+
 @app.post("/webhook/tribute")
 async def tribute_webhook_compat(request: Request, token: str | None = None) -> JSONResponse:
     # Backward-compatible path: some Tribute configs used /webhook/tribute.
     return await tribute_webhook(request, token=token)
+
+
+@app.get("/webhook/tribute")
+def tribute_webhook_compat_get(token: str | None = None) -> JSONResponse:
+    # Backward-compatible path: some Tribute configs used /webhook/tribute.
+    return _tribute_webhook_ping(token=token)
 
 
 @app.get("/api/admin/grant")
