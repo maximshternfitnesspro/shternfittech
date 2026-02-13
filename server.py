@@ -29,6 +29,12 @@ TIER_HINTS = {
     "ELITE": {"elite", "sNQQ".lower(), "nqq"},
 }
 
+TRIBUTE_LINKS = {
+    "CORE": "https://t.me/tribute/app?startapp=sNQO",
+    "BOOST": "https://t.me/tribute/app?startapp=sNQP",
+    "ELITE": "https://t.me/tribute/app?startapp=sNQQ",
+}
+
 WEBHOOK_TOKEN = os.getenv("MINIAPP_TRIBUTE_WEBHOOK_TOKEN", "")
 TELEGRAM_BOT_TOKEN = (os.getenv("MINIAPP_NOTIFY_BOT_TOKEN") or os.getenv("MINIAPP_BOT_TOKEN") or "").strip()
 NOTIFY_ON_PAYMENT = os.getenv("MINIAPP_NOTIFY_ON_PAYMENT", "1").strip() not in {"0", "false", "False", "no", "NO"}
@@ -285,7 +291,7 @@ def upsert_tier_exact(tg_user_id: str, tier: str, payload: Any, source: str) -> 
     return {"tier_before": current, "tier_after": final_tier}
 
 
-def send_telegram_message(tg_user_id: str, text: str) -> bool:
+def send_telegram_message(tg_user_id: str, text: str, reply_markup: dict[str, Any] | None = None) -> bool:
     """
     Best-effort notification after successful payment.
     Important: Telegram allows bot->user messages only if the user started the bot earlier.
@@ -298,6 +304,8 @@ def send_telegram_message(tg_user_id: str, text: str) -> bool:
         "text": text,
         "disable_web_page_preview": True,
     }
+    if reply_markup:
+        payload["reply_markup"] = reply_markup
     data = json.dumps(payload, ensure_ascii=False).encode("utf-8")
     req = urllib.request.Request(
         url=f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage",
@@ -585,7 +593,25 @@ async def access_pending(request: Request) -> dict[str, Any]:
     if not tg_user_id:
         tg_user_id, _verified = resolve_tg_user_id(request, None)
 
+    status_before = get_status(tg_user_id)
+    pending_before = normalize_tier(status_before.get("pending_tier"))
+
     upsert_pending(tg_user_id, tier)
+
+    # Payment assistant: drop a one-tap button into the bot chat so users don't get lost.
+    # Avoid spamming the same button repeatedly.
+    if pending_before != tier and tier in TRIBUTE_LINKS:
+        send_telegram_message(
+            tg_user_id,
+            (
+                f"Открыта оплата {tier}.\n\n"
+                "Нажми кнопку ниже. После оплаты вернись в Mini App — доступ обновится автоматически."
+            ),
+            reply_markup={
+                "inline_keyboard": [[{"text": f"Оплатить {tier}", "url": TRIBUTE_LINKS[tier]}]],
+            },
+        )
+
     return {"ok": True, **get_status(tg_user_id)}
 
 
