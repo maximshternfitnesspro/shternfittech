@@ -41,6 +41,9 @@ NOTIFY_ON_PAYMENT = os.getenv("MINIAPP_NOTIFY_ON_PAYMENT", "1").strip() not in {
 TRIBUTE_API_KEY = (os.getenv("MINIAPP_TRIBUTE_API_KEY") or "").strip()
 TRIBUTE_WEBHOOK_SIGNATURE_SECRET = (os.getenv("MINIAPP_TRIBUTE_WEBHOOK_SIGNATURE_SECRET") or "").strip()
 ADMIN_TOKEN = (os.getenv("MINIAPP_ADMIN_TOKEN") or "").strip()
+SUPPORT_URL = (os.getenv("MINIAPP_SUPPORT_URL") or "https://t.me/rawfitmax").strip()
+MINIAPP_ASSET_VERSION = (os.getenv("MINIAPP_ASSET_VERSION") or "").strip()
+MINIAPP_PUBLIC_URL = (os.getenv("MINIAPP_WEBAPP_URL") or "").strip().rstrip("/")
 
 # Optional: use Telegram channel/group membership as the source of truth for access.
 # This works well with Tribute because Tribute adds/removes users from the paid chat automatically.
@@ -56,6 +59,42 @@ app = FastAPI(title="Mini App Backend", version="1.0.0")
 
 def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+def miniapp_url_for(request: Request, screen: str | None = None) -> str:
+    """
+    URL used in Telegram `web_app` buttons.
+
+    Prefer explicit MINIAPP_WEBAPP_URL, otherwise use the request base URL (Render / custom domain).
+    Append an optional asset version so Telegram WebView reloads the updated HTML.
+    """
+
+    base = MINIAPP_PUBLIC_URL or str(request.base_url).rstrip("/")
+    url = f"{base}/index-motif.html"
+    params: dict[str, str] = {}
+    if screen:
+        params["screen"] = screen
+    if MINIAPP_ASSET_VERSION:
+        params["v"] = MINIAPP_ASSET_VERSION
+    if params:
+        url = f"{url}?{urllib.parse.urlencode(params)}"
+    return url
+
+
+def build_bot_menu_markup(request: Request) -> dict[str, Any]:
+    home_url = miniapp_url_for(request)
+    sub_url = miniapp_url_for(request, screen="subscription")
+    progress_url = miniapp_url_for(request, screen="progress")
+    return {
+        "inline_keyboard": [
+            [{"text": "Открыть Mini App", "web_app": {"url": home_url}}],
+            [
+                {"text": "Подписка", "web_app": {"url": sub_url}},
+                {"text": "Прогресс", "web_app": {"url": progress_url}},
+            ],
+            [{"text": "Поддержка", "url": SUPPORT_URL}],
+        ]
+    }
 
 
 def db() -> sqlite3.Connection:
@@ -87,6 +126,36 @@ def init_db() -> None:
               payload TEXT NOT NULL
             )
             """
+        )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS bot_menu_state (
+              tg_user_id TEXT PRIMARY KEY,
+              sent_at TEXT NOT NULL
+            )
+            """
+        )
+
+
+def bot_menu_was_sent(tg_user_id: str) -> bool:
+    with db() as conn:
+        row = conn.execute(
+            "SELECT sent_at FROM bot_menu_state WHERE tg_user_id = ?",
+            (tg_user_id,),
+        ).fetchone()
+    return bool(row)
+
+
+def mark_bot_menu_sent(tg_user_id: str) -> None:
+    with db() as conn:
+        conn.execute(
+            """
+            INSERT INTO bot_menu_state (tg_user_id, sent_at)
+            VALUES (?, ?)
+            ON CONFLICT(tg_user_id) DO UPDATE SET
+              sent_at=excluded.sent_at
+            """,
+            (tg_user_id, now_iso()),
         )
 
 
@@ -554,6 +623,18 @@ def access_status(
     token: str | None = None,
 ) -> dict[str, Any]:
     resolved_id, verified = resolve_tg_user_id(request, tg_user_id)
+
+    # Seed the bot chat once with a "remote control" message containing useful buttons.
+    # This does not require a separate bot process (we send via Bot API from backend),
+    # and it fixes the UX where users see no buttons in the chat.
+    if verified and not bot_menu_was_sent(resolved_id):
+        ok = send_telegram_message(
+            resolved_id,
+            "Меню протокола:",
+            reply_markup=build_bot_menu_markup(request),
+        )
+        if ok:
+            mark_bot_menu_sent(resolved_id)
     if refresh:
         if not verified and (not ADMIN_TOKEN or token != ADMIN_TOKEN):
             raise HTTPException(status_code=403, detail="forbidden")
@@ -578,6 +659,7 @@ def access_status(
                         f"Доступ обновлен: {transition.get('tier_after')} активирован.\n\n"
                         "Открой Mini App и продолжай уровни."
                     ),
+                    reply_markup=build_bot_menu_markup(request),
                 )
     return {"ok": True, **get_status(resolved_id.strip())}
 
@@ -613,6 +695,31 @@ async def access_pending(request: Request) -> dict[str, Any]:
         )
 
     return {"ok": True, **get_status(tg_user_id)}
+
+
+@app.post("/api/bot/menu")
+async def bot_menu(request: Request) -> dict[str, Any]:
+    """
+    Sends a "remote control" message with buttons into the bot chat.
+    Useful when the bot itself isn't running with polling/webhook, but we still want UX buttons.
+    """
+
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+
+    tg_user_id = str((body or {}).get("tg_user_id", "")).strip()
+    resolved_id, _verified = resolve_tg_user_id(request, tg_user_id or None)
+
+    ok = send_telegram_message(
+        resolved_id,
+        "Меню протокола:",
+        reply_markup=build_bot_menu_markup(request),
+    )
+    if ok:
+        mark_bot_menu_sent(resolved_id)
+    return {"ok": bool(ok)}
 
 
 @app.post("/api/tribute/webhook")
@@ -704,13 +811,16 @@ async def tribute_webhook(request: Request, token: str | None = None) -> JSONRes
         event_key,
         request.url.path,
     )
-    send_telegram_message(
+    notified = send_telegram_message(
         tg_user_id,
         (
             f"Оплата подтверждена. Доступ {tier_after} активирован.\n\n"
             "Открой Mini App и продолжай уровни. Если уровень не обновился — зайди в «Подписка» и нажми «Проверить оплату»."
         ),
+        reply_markup=build_bot_menu_markup(request),
     )
+    if notified:
+        mark_bot_menu_sent(tg_user_id)
     return JSONResponse(
         {
             "ok": True,

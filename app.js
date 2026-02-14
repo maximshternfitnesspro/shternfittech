@@ -10,6 +10,11 @@ const ONBOARDING_VERSION = 5;
 const DEMO_LEVEL_CAP = 3;
 const ALWAYS_SHOW_ONBOARDING = true;
 const TIER_RANK = { DEMO: 0, CORE: 1, BOOST: 2, ELITE: 3 };
+const STARTUP_SCREEN = (() => {
+  const raw = new URLSearchParams(window.location.search).get("screen");
+  const allowed = new Set(["home", "mission", "progress", "shop", "subscription", "settings"]);
+  return raw && allowed.has(raw) ? raw : null;
+})();
 
 const TRIBUTE_PAYMENT_LINKS = {
   CORE: {
@@ -34,6 +39,7 @@ const DEFAULT_STATE = {
   window: "19:30–22:30",
   mode: "Перезапуск",
   homeDetailsOpen: false,
+  botMenuSent: false,
   sideQuestDone: false,
   modifier: "Не активен",
   completedHistory: [],
@@ -184,6 +190,7 @@ const settingsRemindersBtn = document.getElementById("settings-reminders-btn");
 const settingsWindowVal = document.getElementById("settings-window-val");
 const settingsResetMission = document.getElementById("settings-reset-mission");
 const settingsTourBtn = document.getElementById("settings-tour-btn");
+const settingsBotMenuBtn = document.getElementById("settings-bot-menu-btn");
 const settingsEffectsVal = document.getElementById("settings-effects-val");
 const subscriptionCurrentChip = document.getElementById("subscription-current-chip");
 const subscriptionHeadline = document.getElementById("subscription-headline");
@@ -491,6 +498,39 @@ async function markPendingUpgradeRemote(tier, { resend = false } = {}) {
   });
   if (!response.ok) throw new Error(`pending_status_${response.status}`);
   backendReachable = true;
+}
+
+async function sendBotMenuRemote() {
+  const tgUserId = getTelegramUserId();
+  const initData = getTelegramInitData();
+  if (!tgUserId && !initData) return false;
+
+  const headers = { "Content-Type": "application/json" };
+  if (initData) headers["X-Tg-Init-Data"] = initData;
+  const payload = tgUserId ? { tg_user_id: tgUserId } : {};
+
+  const response = await fetch("/api/bot/menu", {
+    method: "POST",
+    headers,
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) throw new Error(`bot_menu_${response.status}`);
+  const data = await response.json().catch(() => ({}));
+  return Boolean(data && data.ok);
+}
+
+async function maybeSendBotMenu({ force = false } = {}) {
+  if (state.botMenuSent && !force) return false;
+  try {
+    const ok = await sendBotMenuRemote();
+    if (ok) {
+      state.botMenuSent = true;
+      saveState();
+    }
+    return ok;
+  } catch {
+    return false;
+  }
 }
 
 function applyAccessStatus(status, { manual = false } = {}) {
@@ -811,6 +851,7 @@ function loadState() {
       subscription: parsed.subscription || DEFAULT_STATE.subscription,
       tourDone: Boolean(parsed.tourDone),
       homeDetailsOpen: Boolean(parsed.homeDetailsOpen),
+      botMenuSent: Boolean(parsed.botMenuSent),
       completedHistory: parsedHistory.length ? parsedHistory.slice(-8) : defaultHistoryByLevel(parsed.level || DEFAULT_STATE.level),
       currentLevelPassed: Boolean(parsed.currentLevelPassed),
       nextUnlockAt,
@@ -1853,6 +1894,9 @@ function finishOnboarding() {
     return;
   }
   render();
+  if (STARTUP_SCREEN) {
+    setActiveScreen(STARTUP_SCREEN);
+  }
   if (!state.tourDone) {
     setTimeout(() => startTour(), 260);
   }
@@ -2236,6 +2280,21 @@ if (!motifReady) {
       startTour();
     });
   }
+  if (settingsBotMenuBtn) {
+    settingsBotMenuBtn.addEventListener("click", async () => {
+      playUiClick("ghost");
+      triggerHaptic("soft");
+      const original = settingsBotMenuBtn.textContent;
+      settingsBotMenuBtn.textContent = "Отправляю…";
+      settingsBotMenuBtn.disabled = true;
+      const ok = await maybeSendBotMenu({ force: true });
+      settingsBotMenuBtn.textContent = ok ? "Отправлено" : "Ошибка";
+      setTimeout(() => {
+        settingsBotMenuBtn.textContent = original;
+        settingsBotMenuBtn.disabled = false;
+      }, 1200);
+    });
+  }
   if (tourNextBtn) {
     tourNextBtn.addEventListener("click", () => {
       playUiClick("primary");
@@ -2316,6 +2375,11 @@ if (!motifReady) {
       // В обычном режиме это не должно происходить, но webview бывает капризным.
       // eslint-disable-next-line no-console
       console.error("render_failed", error);
+    }
+
+    // Allow Telegram `web_app` buttons to open directly on a specific screen.
+    if (STARTUP_SCREEN && onboarding && onboarding.classList.contains("hidden")) {
+      setActiveScreen(STARTUP_SCREEN);
     }
     startAccessPolling();
     checkAccessStatus({ manual: false, refresh: true });
