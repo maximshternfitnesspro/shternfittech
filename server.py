@@ -587,11 +587,11 @@ async def access_pending(request: Request) -> dict[str, Any]:
     body = await request.json()
     tg_user_id = str(body.get("tg_user_id", "")).strip()
     tier = normalize_tier(body.get("tier"))
+    resend = bool(body.get("resend"))
     if not tier:
         raise HTTPException(status_code=400, detail="tg_user_id и tier обязательны")
 
-    if not tg_user_id:
-        tg_user_id, _verified = resolve_tg_user_id(request, None)
+    tg_user_id, verified = resolve_tg_user_id(request, tg_user_id or None)
 
     status_before = get_status(tg_user_id)
     pending_before = normalize_tier(status_before.get("pending_tier"))
@@ -600,7 +600,7 @@ async def access_pending(request: Request) -> dict[str, Any]:
 
     # Payment assistant: drop a one-tap button into the bot chat so users don't get lost.
     # Avoid spamming the same button repeatedly.
-    if pending_before != tier and tier in TRIBUTE_LINKS:
+    if verified and tier in TRIBUTE_LINKS and (pending_before != tier or resend):
         send_telegram_message(
             tg_user_id,
             (

@@ -183,6 +183,7 @@ const subscriptionHeadline = document.getElementById("subscription-headline");
 const subscriptionPending = document.getElementById("subscription-pending");
 const subscriptionPendingText = document.getElementById("subscription-pending-text");
 const subscriptionCheckBtn = document.getElementById("subscription-check-btn");
+const subscriptionResendBtn = document.getElementById("subscription-resend-btn");
 const upgradeCoreBtn = document.getElementById("upgrade-core-btn");
 const upgradeBoostBtn = document.getElementById("upgrade-boost-btn");
 const upgradeEliteBtn = document.getElementById("upgrade-elite-btn");
@@ -429,7 +430,7 @@ function applyConfirmedTier(tier) {
   return true;
 }
 
-async function markPendingUpgradeRemote(tier) {
+async function markPendingUpgradeRemote(tier, { resend = false } = {}) {
   const tgUserId = getTelegramUserId();
   const initData = getTelegramInitData();
   if (!tgUserId && !initData) return;
@@ -438,6 +439,7 @@ async function markPendingUpgradeRemote(tier) {
   if (initData) headers["X-Tg-Init-Data"] = initData;
 
   const payload = tgUserId ? { tg_user_id: tgUserId, tier } : { tier };
+  if (resend) payload.resend = true;
   const response = await fetch("/api/access/pending", {
     method: "POST",
     headers,
@@ -2081,6 +2083,33 @@ if (!motifReady) {
       playUiClick("primary");
       triggerHaptic("heavy");
       await checkAccessStatus({ manual: true });
+    });
+  }
+  if (subscriptionResendBtn) {
+    subscriptionResendBtn.addEventListener("click", async () => {
+      playUiClick("ghost");
+      triggerHaptic("soft");
+
+      const pendingTier = getPendingUpgradeTier();
+      const targetLabel = subscriptionPendingText || shopMessage;
+      if (!pendingTier) {
+        if (targetLabel) targetLabel.textContent = "Сначала выбери тариф для оплаты.";
+        return;
+      }
+
+      try {
+        await markPendingUpgradeRemote(pendingTier, { resend: true });
+        backendReachable = true;
+        if (targetLabel) targetLabel.textContent = "Кнопка оплаты отправлена в бот. Открой чат и нажми «Оплатить».";
+        triggerHaptic("success");
+      } catch {
+        backendReachable = false;
+        if (targetLabel) {
+          targetLabel.textContent =
+            "Не удалось отправить кнопку. Открой Mini App из Telegram или попробуй позже (сервер проверки недоступен).";
+        }
+        triggerHaptic("error");
+      }
     });
   }
   hydrationInput.addEventListener("input", (event) => updateHydration(event.target.value));
