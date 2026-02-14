@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Russo+One&display=swap" rel="stylesheet" />
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link rel="stylesheet" href="styles-motif.css?v=20260214b" />
+    <link rel="stylesheet" href="styles-motif.css?v=20260214c" />
   </head>
   <body>
     <div class="global-overlay" aria-hidden="true"></div>
@@ -106,6 +106,7 @@
         <button class="mobile-menu-toggle" id="mobile-menu-toggle" aria-label="Открыть меню">
           МЕНЮ
         </button>
+        <div class="hud__net hidden" id="hud-net">NO SIGNAL</div>
         <div class="hud__stats">
           <div class="hud__tier">
             <span>УРОВЕНЬ ПОДПИСКИ</span>
@@ -164,26 +165,25 @@
                 <div class="metric__label demo-note" id="home-demo-note">ДЕМО РЕЖИМ АКТИВИРОВАН: 3 уровня бесплатно.</div>
               </div>
               <div class="cta-stack">
-                <button class="btn btn--primary" id="cta-start">Запустить протокол</button>
-                <button class="btn btn--ghost btn--locked" id="module-switch-btn">Скоро: другие программы</button>
+                <button class="btn btn--primary" id="cta-start">Запустить миссию</button>
               </div>
-              <div class="metrics">
-                <div class="metric">
-                  <div class="metric__label">Синхронизация</div>
-                  <div class="metric__value" id="home-sync-series">2 уровня подряд</div>
+              <div class="home-hudline">
+                <div class="home-hudline__item">
+                  <div class="home-hudline__key">Окно бонуса</div>
+                  <div class="home-hudline__val" id="home-window">19:30–22:30</div>
                 </div>
-                <div class="metric">
-                  <div class="metric__label">Окно</div>
-                  <div class="metric__value" id="home-window">19:30–22:30</div>
-                </div>
-                <div class="metric">
-                  <div class="metric__label">Бонус окна</div>
-                  <div class="metric__value" id="home-bonus">Осталось 2ч 14м</div>
+                <div class="home-hudline__divider"></div>
+                <div class="home-hudline__item">
+                  <div class="home-hudline__key">Бонус окна</div>
+                  <div class="home-hudline__val" id="home-bonus">Осталось 2ч 14м</div>
                 </div>
               </div>
               <div class="metric__label" id="home-access-rule">
                 Лимит: 1 уровень в день. Следующий уровень открывается на следующий день в 07:00 МСК.
               </div>
+              <button class="btn btn--ghost home-details-toggle" id="home-details-toggle" type="button">
+                Показатели системы
+              </button>
               <div class="warning-block hidden" id="home-paywall-block">
                 <div class="warning-block__title">Демо завершено: 3/3</div>
                 <div class="warning-block__text">Чтобы открыть уровни 4+, выбери тариф и продолжай цикл.</div>
@@ -194,18 +194,46 @@
             </div>
           </div>
 
-          <div class="panel panel--secondary">
-            <div class="panel__header">
-              <div class="panel__title">Дополнительное задание</div>
-              <div class="chip chip--cyan">МОД 01</div>
-            </div>
-            <div class="panel__body">
-              <div class="metric__value" id="sidequest-name">Белок в каждом приеме пищи</div>
-              <div class="metric__label">Даёт модификатор недели.</div>
-              <div class="cta-row">
-                <button class="btn btn--ghost" id="sidequest-btn">Выполнено</button>
+          <div class="home-details hidden" id="home-details">
+            <div class="panel panel--secondary">
+              <div class="panel__header">
+                <div class="panel__title">Статус системы</div>
+                <div class="chip chip--cyan">LIVE</div>
               </div>
-              <div class="metric__label" id="sidequest-status">Статус: не выполнено</div>
+              <div class="panel__body">
+                <div class="metrics">
+                  <div class="metric">
+                    <div class="metric__label">Синхронизация</div>
+                    <div class="metric__value" id="home-sync-series">2 уровня подряд</div>
+                  </div>
+                  <div class="metric">
+                    <div class="metric__label">Окно</div>
+                    <div class="metric__value" id="home-window-details">См. выше</div>
+                  </div>
+                  <div class="metric">
+                    <div class="metric__label">Бонус окна</div>
+                    <div class="metric__value" id="home-bonus-details">См. выше</div>
+                  </div>
+                </div>
+                <div class="cta-row">
+                  <button class="btn btn--ghost btn--locked" id="module-switch-btn">Скоро: другие программы</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="panel panel--secondary">
+              <div class="panel__header">
+                <div class="panel__title">Дополнительное задание</div>
+                <div class="chip chip--cyan">МОД 01</div>
+              </div>
+              <div class="panel__body">
+                <div class="metric__value" id="sidequest-name">Белок в каждом приеме пищи</div>
+                <div class="metric__label">Даёт модификатор недели.</div>
+                <div class="cta-row">
+                  <button class="btn btn--ghost" id="sidequest-btn">Выполнено</button>
+                </div>
+                <div class="metric__label" id="sidequest-status">Статус: не выполнено</div>
+              </div>
             </div>
           </div>
         </section>
@@ -290,6 +318,9 @@
                 </div>
               </div>
               <div class="progress-log" id="progress-log"></div>
+              <div class="cta-row">
+                <button class="btn btn--ghost" id="progress-share-btn">Поделиться прогрессом</button>
+              </div>
               <div class="warning-block hidden" id="progress-paywall-block">
                 <div class="warning-block__title">Демо-модуль завершён</div>
                 <div class="warning-block__text">Прогресс сохранён. Для следующих уровней нужен платный доступ.</div>
@@ -629,6 +660,6 @@
       </div>
     </div>
 
-    <script src="app.js?v=20260214b"></script>
+    <script src="app.js?v=20260214c"></script>
   </body>
 </html>

@@ -11,7 +11,7 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update, WebAppI
 from telegram.ext import Application, CallbackQueryHandler, CommandHandler, ContextTypes
 
 
-ASSET_VERSION = "20260214b"
+ASSET_VERSION = "20260214c"
 
 TRIBUTE_LINKS = {
     "CORE": {
@@ -59,8 +59,11 @@ def build_main_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         [
             [InlineKeyboardButton("Открыть Mini App", web_app=WebAppInfo(url=webapp_link))],
-            [InlineKeyboardButton("Статус подписки", callback_data="status")],
-            [InlineKeyboardButton("Тарифы", callback_data="plans")],
+            [
+                InlineKeyboardButton("Статус", callback_data="status"),
+                InlineKeyboardButton("Оплатить", callback_data="plans"),
+            ],
+            [InlineKeyboardButton("Поддержка", url="https://t.me/rawfitmax")],
         ]
     )
 
@@ -106,12 +109,18 @@ def plans_text() -> str:
         f"{TRIBUTE_LINKS['ELITE']['telegram']}"
     )
 
+def support_text() -> str:
+    return (
+        "Поддержка: напиши @rawfitmax\n"
+        "Если оплата не открылась — нажми «Оплатить» и повтори попытку."
+    )
+
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not update.message:
         return
     await update.message.reply_text(
-        "Чит-код на сушку активирован. Открой Mini App и проходи 1 уровень в день.",
+        "Чит-код на сушку активирован.\nОткрой Mini App и проходи 1 уровень в день.",
         reply_markup=build_main_keyboard(),
     )
 
@@ -142,6 +151,15 @@ async def plans_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if update.message:
         await update.message.reply_text(text)
 
+async def support_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    text = support_text()
+    if update.callback_query:
+        await update.callback_query.answer()
+        await update.callback_query.message.reply_text(text)
+        return
+    if update.message:
+        await update.message.reply_text(text)
+
 
 async def id_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not update.effective_user or not update.message:
@@ -165,6 +183,9 @@ async def callbacks(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if data == "plans":
         await plans_cmd(update, context)
         return
+    if data == "support":
+        await support_cmd(update, context)
+        return
     await update.callback_query.answer("Команда не распознана", show_alert=False)
 
 
@@ -173,6 +194,7 @@ def main() -> None:
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("status", status_cmd))
     app.add_handler(CommandHandler("plans", plans_cmd))
+    app.add_handler(CommandHandler("support", support_cmd))
     app.add_handler(CommandHandler("id", id_cmd))
     app.add_handler(CommandHandler("chatid", chatid_cmd))
     app.add_handler(CallbackQueryHandler(callbacks))

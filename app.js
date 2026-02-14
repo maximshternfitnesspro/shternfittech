@@ -33,6 +33,7 @@ const DEFAULT_STATE = {
   subscription: "DEMO",
   window: "19:30–22:30",
   mode: "Перезапуск",
+  homeDetailsOpen: false,
   sideQuestDone: false,
   modifier: "Не активен",
   completedHistory: [],
@@ -121,6 +122,7 @@ const hudTier = document.getElementById("hud-tier");
 const hudFill = document.getElementById("hud-fill");
 const hudMeta = document.getElementById("hud-meta");
 const hudTitle = document.querySelector(".hud__title");
+const hudNet = document.getElementById("hud-net");
 const modeSwitch = document.querySelector(".mode-switch");
 const sidebarPlan = document.getElementById("sidebar-plan");
 const sidebarUpgradeBtn = document.getElementById("sidebar-upgrade-btn");
@@ -138,6 +140,10 @@ const homeAccessRule = document.getElementById("home-access-rule");
 const homeDemoNote = document.getElementById("home-demo-note");
 const homePaywallBlock = document.getElementById("home-paywall-block");
 const homePaywallBtn = document.getElementById("home-paywall-btn");
+const homeDetails = document.getElementById("home-details");
+const homeDetailsToggle = document.getElementById("home-details-toggle");
+const homeWindowDetails = document.getElementById("home-window-details");
+const homeBonusDetails = document.getElementById("home-bonus-details");
 
 const missionPanelTitle = document.getElementById("mission-panel-title");
 
@@ -149,6 +155,7 @@ const progressBoss = document.getElementById("progress-boss");
 const progressLog = document.getElementById("progress-log");
 const progressPaywallBlock = document.getElementById("progress-paywall-block");
 const progressPaywallBtn = document.getElementById("progress-paywall-btn");
+const progressShareBtn = document.getElementById("progress-share-btn");
 
 const resultMainReward = document.getElementById("result-main-reward");
 const resultBonusReward = document.getElementById("result-bonus-reward");
@@ -252,6 +259,7 @@ const TOUR_STEPS = [
     text: "Главная кнопка дня: запускает тренировку текущего уровня.",
     prepare: () => {
       closeMobileDrawer();
+      state.homeDetailsOpen = false;
       setActiveScreen("home");
     },
     target: () => ctaStart,
@@ -261,6 +269,7 @@ const TOUR_STEPS = [
     text: "Необязательная активность. Даёт модификатор недели.",
     prepare: () => {
       closeMobileDrawer();
+      state.homeDetailsOpen = true;
       setActiveScreen("home");
     },
     target: () => sideQuestBtn,
@@ -288,6 +297,7 @@ const TOUR_STEPS = [
     text: "План простой: 1 уровень в день, стабильный прогресс без перегруза.",
     prepare: () => {
       closeMobileDrawer();
+      state.homeDetailsOpen = false;
       setActiveScreen("home");
     },
     target: () => ctaStart,
@@ -340,6 +350,40 @@ function openExternalLink(url) {
     }
   }
   window.open(url, "_blank", "noopener,noreferrer");
+}
+
+function buildShareText() {
+  const completedLevels = completedLevelsCount();
+  const progress =
+    state.subscription === "DEMO"
+      ? `DEMO ${completedDemoLevels()}/${DEMO_LEVEL_CAP}`
+      : `уровни ${completedLevels}/30`;
+
+  const bossReferenceLevel = clamp(state.currentLevelPassed ? state.level + 1 : state.level, 1, 30);
+  if (state.subscription === "DEMO") {
+    const left = demoLevelsLeft();
+    const tail = left > 0 ? `До конца демо: ${formatLevelCount(left)}` : "Демо завершено";
+    return `Чит-код на сушку — ${progress}. ${tail}.`;
+  }
+
+  const distance = levelsToBoss(bossReferenceLevel);
+  const tail = distance > 0 ? `До босса: ${formatLevelCount(distance)}` : "Босс цикла пройден.";
+  return `Чит-код на сушку — ${progress}. ${tail}`;
+}
+
+async function shareProgress() {
+  const shareUrl = "https://t.me/cheatcodewith_bot";
+  const text = buildShareText();
+  try {
+    if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+      await navigator.clipboard.writeText(`${text}\n${shareUrl}`);
+    }
+  } catch {
+    // Ignore clipboard errors in restrictive webviews.
+  }
+
+  const tgShare = `https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(text)}`;
+  openExternalLink(tgShare);
 }
 
 function pickPaymentLinkByTier(tier) {
@@ -510,6 +554,7 @@ async function checkAccessStatus({ manual = false, refresh = false } = {}) {
   if (statusRequestInFlight) return;
   if (!manual && !backendReachable) return;
 
+  const wasReachable = backendReachable;
   statusRequestInFlight = true;
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 4500);
@@ -528,10 +573,20 @@ async function checkAccessStatus({ manual = false, refresh = false } = {}) {
     const payload = await response.json();
     backendReachable = true;
     applyAccessStatus(payload, { manual });
+    if (!wasReachable) {
+      try {
+        render();
+      } catch {}
+    }
   } catch (error) {
     backendReachable = false;
     if (manual && shopMessage) {
       shopMessage.textContent = "Сервер проверки оплаты недоступен. Повтори попытку позже.";
+    }
+    if (wasReachable) {
+      try {
+        render();
+      } catch {}
     }
   } finally {
     clearTimeout(timeoutId);
@@ -755,6 +810,7 @@ function loadState() {
       ...parsed,
       subscription: parsed.subscription || DEFAULT_STATE.subscription,
       tourDone: Boolean(parsed.tourDone),
+      homeDetailsOpen: Boolean(parsed.homeDetailsOpen),
       completedHistory: parsedHistory.length ? parsedHistory.slice(-8) : defaultHistoryByLevel(parsed.level || DEFAULT_STATE.level),
       currentLevelPassed: Boolean(parsed.currentLevelPassed),
       nextUnlockAt,
@@ -1126,6 +1182,12 @@ function render() {
   const pendingTier = getPendingUpgradeTier();
   const missionBlocked = subscriptionInfo.expired || state.currentLevelPassed || cycleComplete || demoFinished;
 
+  if (hudNet) {
+    const initData = getTelegramInitData();
+    const canVerify = Boolean(getTelegramUserId() || (initData && String(initData).trim()));
+    hudNet.classList.toggle("hidden", !canVerify || backendReachable);
+  }
+
   if (!demoFinished) {
     demoPaywallPresented = false;
     closeDemoPaywall();
@@ -1247,6 +1309,12 @@ function render() {
   homeSyncSeries.textContent = `${formatLevelCount(state.syncSeries)} подряд`;
   homeWindow.textContent = state.window;
   homeBonus.textContent = "Осталось 2ч 14м";
+  if (homeWindowDetails) homeWindowDetails.textContent = state.window;
+  if (homeBonusDetails) homeBonusDetails.textContent = homeBonus.textContent;
+  if (homeDetails) homeDetails.classList.toggle("hidden", !state.homeDetailsOpen);
+  if (homeDetailsToggle) {
+    homeDetailsToggle.textContent = state.homeDetailsOpen ? "Скрыть показатели" : "Показатели системы";
+  }
   if (homeAccessRule) homeAccessRule.textContent = missionAccessNote(subscriptionInfo);
   if (homePaywallBlock) homePaywallBlock.classList.toggle("hidden", !demoFinished);
 
@@ -1360,7 +1428,7 @@ function render() {
   }
 
   if (resultNextBtn) {
-    resultNextBtn.textContent = state.subscription === "DEMO" && demoFinished ? "Открыть тарифы" : "К следующему уровню";
+    resultNextBtn.textContent = state.subscription === "DEMO" && demoFinished ? "Открыть тарифы" : "На Дом";
   }
 
   syncShopButtons();
@@ -1911,6 +1979,16 @@ if (!motifReady) {
     }
     setActiveScreen("mission");
   });
+  if (homeDetailsToggle) {
+    homeDetailsToggle.addEventListener("click", () => {
+      playUiClick("ghost");
+      triggerHaptic("soft");
+      state.homeDetailsOpen = !state.homeDetailsOpen;
+      saveState();
+      render();
+      refreshTourMask();
+    });
+  }
   if (homePaywallBtn) {
     homePaywallBtn.addEventListener("click", () => {
       playUiClick("upgrade");
@@ -1923,6 +2001,21 @@ if (!motifReady) {
       playUiClick("upgrade");
       triggerHaptic("heavy");
       openSubscriptionPaywall();
+    });
+  }
+  if (progressShareBtn) {
+    progressShareBtn.addEventListener("click", async () => {
+      playUiClick("ghost");
+      triggerHaptic("soft");
+      const original = progressShareBtn.textContent;
+      progressShareBtn.textContent = "Открываю…";
+      try {
+        await shareProgress();
+      } finally {
+        setTimeout(() => {
+          progressShareBtn.textContent = original;
+        }, 900);
+      }
     });
   }
   if (arsenalModuleBtn) {
@@ -2004,6 +2097,19 @@ if (!motifReady) {
   });
   window.addEventListener("focus", () => {
     checkAccessStatus({ manual: false });
+  });
+  window.addEventListener("online", () => {
+    backendReachable = true;
+    try {
+      render();
+    } catch {}
+    checkAccessStatus({ manual: false, refresh: true });
+  });
+  window.addEventListener("offline", () => {
+    backendReachable = false;
+    try {
+      render();
+    } catch {}
   });
   window.addEventListener("resize", () => {
     refreshTourMask();

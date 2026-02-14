@@ -380,6 +380,33 @@ body::after {
   box-shadow: 0 0 18px rgba(49, 224, 255, 0.35), inset 0 0 0 1px rgba(255, 45, 111, 0.3);
 }
 
+.hud__net {
+  padding: 10px 12px;
+  border-radius: 999px;
+  border: 2px solid rgba(255, 45, 111, 0.9);
+  background: linear-gradient(145deg, rgba(16, 6, 14, 0.94), rgba(9, 6, 14, 0.92));
+  color: rgba(255, 90, 140, 0.96);
+  font-family: "Russo One", sans-serif;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-size: 11px;
+  text-shadow: 0 0 14px rgba(255, 45, 111, 0.55);
+  box-shadow: 0 0 22px rgba(255, 45, 111, 0.45), inset 0 0 0 1px rgba(49, 224, 255, 0.16);
+  animation: noSignal 1.4s ease-in-out infinite;
+}
+
+@keyframes noSignal {
+  0%,
+  100% {
+    filter: saturate(1) brightness(1);
+    opacity: 0.98;
+  }
+  50% {
+    filter: saturate(1.25) brightness(1.2);
+    opacity: 0.72;
+  }
+}
+
 .mobile-menu-toggle:active {
   transform: translateY(1px);
 }
@@ -753,6 +780,69 @@ body::after {
   flex-direction: column;
   gap: 10px;
   max-width: 280px;
+}
+
+.home-hudline {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(49, 224, 255, 0.24);
+  background: linear-gradient(145deg, rgba(6, 10, 18, 0.92), rgba(8, 10, 18, 0.86));
+  box-shadow: inset 0 0 0 1px rgba(255, 45, 111, 0.14), 0 0 18px rgba(49, 224, 255, 0.18);
+}
+
+.home-hudline__item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.home-hudline__key {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(236, 246, 255, 0.62);
+}
+
+.home-hudline__val {
+  font-family: "Russo One", sans-serif;
+  font-size: 13px;
+  letter-spacing: 0.12em;
+  color: rgba(49, 224, 255, 0.96);
+  text-shadow: 0 0 12px rgba(49, 224, 255, 0.38);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.home-hudline__divider {
+  width: 1px;
+  align-self: stretch;
+  background: linear-gradient(180deg, rgba(255, 45, 111, 0.2), rgba(49, 224, 255, 0.4), rgba(255, 45, 111, 0.2));
+  box-shadow: 0 0 12px rgba(49, 224, 255, 0.35);
+}
+
+.home-details {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.home-details-toggle {
+  align-self: flex-start;
+  padding: 10px 14px;
+  border-color: rgba(255, 45, 111, 0.55);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  opacity: 0.92;
+}
+
+.home-details-toggle:hover,
+.home-details-toggle:focus-visible {
+  opacity: 1;
 }
 
 .cta-row {
