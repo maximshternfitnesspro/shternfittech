@@ -2150,23 +2150,14 @@ if (!motifReady) {
     triggerHaptic("soft");
     showOnboardingStep(onboardingStep - 1);
   });
-  if (onboarding) {
-    onboarding.addEventListener(
-      "pointerdown",
-      () => {
-        if (!onboarding.classList.contains("hidden") && onboardingStep === 1) {
-          playOnboardingTheme();
-        }
-      },
-      { passive: true },
-    );
-  }
   onboardingNext.addEventListener("click", () => {
-    playUiClick("primary");
     triggerHaptic("heavy");
     if (onboardingStep === 1) {
-      playStartClick();
+      // Autoplay restrictions: we can only start audio after a user gesture.
+      // On the very first tap, avoid stacking multiple sounds (click + theme).
       playOnboardingTheme();
+    } else {
+      playUiClick("primary");
     }
     showOnboardingStep(onboardingStep + 1);
   });
