@@ -42,7 +42,7 @@ TRIBUTE_API_KEY = (os.getenv("MINIAPP_TRIBUTE_API_KEY") or "").strip()
 TRIBUTE_WEBHOOK_SIGNATURE_SECRET = (os.getenv("MINIAPP_TRIBUTE_WEBHOOK_SIGNATURE_SECRET") or "").strip()
 ADMIN_TOKEN = (os.getenv("MINIAPP_ADMIN_TOKEN") or "").strip()
 SUPPORT_URL = (os.getenv("MINIAPP_SUPPORT_URL") or "https://t.me/rawfitmax").strip()
-MINIAPP_ASSET_VERSION = (os.getenv("MINIAPP_ASSET_VERSION") or "").strip()
+MINIAPP_ASSET_VERSION = (os.getenv("MINIAPP_ASSET_VERSION") or "20260214e").strip()
 MINIAPP_PUBLIC_URL = (os.getenv("MINIAPP_WEBAPP_URL") or "").strip().rstrip("/")
 
 # Optional: use Telegram channel/group membership as the source of truth for access.

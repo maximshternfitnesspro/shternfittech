@@ -98,6 +98,7 @@ const navButtons = document.querySelectorAll("[data-nav]");
 const ctaStart = document.getElementById("cta-start");
 const moduleSwitchBtn = document.getElementById("module-switch-btn");
 const sideQuestBtn = document.getElementById("sidequest-btn");
+const sideQuestPanel = document.getElementById("sidequest-panel");
 const resultNextBtn = document.getElementById("result-next");
 
 const missionStartBtn = document.getElementById("mission-start");
@@ -218,6 +219,8 @@ const tourShadeLeft = document.getElementById("tour-shade-left");
 const tourShadeRight = document.getElementById("tour-shade-right");
 const tourShadeBottom = document.getElementById("tour-shade-bottom");
 const tourSpotlight = document.getElementById("tour-spotlight");
+const tourCard = document.getElementById("tour-card");
+const tourFooter = document.getElementById("tour-footer");
 const tourStep = document.getElementById("tour-step");
 const tourTitle = document.getElementById("tour-title");
 const tourText = document.getElementById("tour-text");
@@ -279,7 +282,7 @@ const TOUR_STEPS = [
       state.homeDetailsOpen = true;
       setActiveScreen("home");
     },
-    target: () => sideQuestBtn,
+    target: () => sideQuestPanel || sideQuestBtn,
   },
   {
     title: "Подписка",
@@ -300,14 +303,14 @@ const TOUR_STEPS = [
     target: () => progressRing,
   },
   {
-    title: "Готово",
-    text: "План простой: 1 уровень в день, стабильный прогресс без перегруза.",
+    title: "Меню",
+    text: "Если потерялся — жми «МЕНЮ»: там быстрый переход к Подписке, Прогрессу и Настройкам.",
     prepare: () => {
       closeMobileDrawer();
       state.homeDetailsOpen = false;
       setActiveScreen("home");
     },
-    target: () => ctaStart,
+    target: () => mobileMenuToggle,
   },
 ];
 
@@ -1660,8 +1663,7 @@ function syncBodyLock() {
   const modulesOpen = modulesModal && !modulesModal.classList.contains("hidden");
   const paywallOpen = demoPaywall && !demoPaywall.classList.contains("hidden");
   const drawerOpen = mobileDrawer && !mobileDrawer.classList.contains("hidden");
-  const tourOpen = tourOverlay && !tourOverlay.classList.contains("hidden");
-  document.body.classList.toggle("modal-open", Boolean(modulesOpen || paywallOpen || drawerOpen || tourOpen));
+  document.body.classList.toggle("modal-open", Boolean(modulesOpen || paywallOpen || drawerOpen));
 }
 
 function openModulesModal() {
@@ -1783,6 +1785,61 @@ function refreshTourMask() {
   });
 }
 
+function getTourFooterReserve() {
+  if (!tourFooter) return 0;
+  const rect = tourFooter.getBoundingClientRect();
+  // The footer already includes safe-area padding in CSS; reserve a bit extra.
+  return Math.max(0, rect.height + 16);
+}
+
+function positionTourCard(target) {
+  if (!tourCard) return;
+  const vh = window.innerHeight || 0;
+  const margin = 18;
+  const bottomReserve = getTourFooterReserve() + margin;
+
+  // Default placement: bottom, above the action footer.
+  let placement = "bottom";
+  if (target) {
+    const rect = target.getBoundingClientRect();
+    if (rect.top > vh * 0.55) placement = "top";
+  }
+
+  const applyPlacement = (place) => {
+    if (place === "top") {
+      tourCard.style.top = `${margin}px`;
+      tourCard.style.bottom = "auto";
+      return;
+    }
+    tourCard.style.top = "auto";
+    tourCard.style.bottom = `${bottomReserve}px`;
+  };
+
+  applyPlacement(placement);
+
+  // If we overlap the target, flip placement.
+  if (target) {
+    const cardRect = tourCard.getBoundingClientRect();
+    const targetRect = target.getBoundingClientRect();
+    const overlaps = !(cardRect.bottom < targetRect.top - 10 || cardRect.top > targetRect.bottom + 10);
+    if (overlaps) {
+      applyPlacement(placement === "top" ? "bottom" : "top");
+    }
+  }
+}
+
+function nudgeTourTargetIntoView(target) {
+  if (!target) return;
+  const rect = target.getBoundingClientRect();
+  const vh = window.innerHeight || 0;
+  const reserve = getTourFooterReserve() + 12;
+  const lowerBound = vh - reserve;
+
+  if (rect.bottom > lowerBound) {
+    window.scrollBy({ top: rect.bottom - lowerBound, left: 0, behavior: "smooth" });
+  }
+}
+
 function openTourOverlay() {
   if (!tourOverlay) return;
   tourOverlay.classList.remove("hidden");
@@ -1825,10 +1882,17 @@ function renderTourStep() {
     clearTourHighlight();
     if (target) {
       target.classList.add("tour-highlight");
-      target.scrollIntoView({ block: "center", behavior: "smooth" });
+      target.scrollIntoView({ block: "center" });
     }
+    positionTourCard(target);
     refreshTourMask();
-    setTimeout(refreshTourMask, 220);
+    setTimeout(() => {
+      if (!tourActive) return;
+      // Ensure the highlighted area isn't hidden behind the footer controls.
+      nudgeTourTargetIntoView(target);
+      positionTourCard(target);
+      refreshTourMask();
+    }, 240);
 
     if (tourStep) tourStep.textContent = `Шаг ${tourIndex + 1} / ${TOUR_STEPS.length}`;
     if (tourTitle) tourTitle.textContent = currentStep.title;
