@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Russo+One&display=swap" rel="stylesheet" />
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link rel="stylesheet" href="styles-motif.css?v=20260214e" />
+    <link rel="stylesheet" href="styles-motif.css?v=20260214f" />
   </head>
   <body>
     <div class="global-overlay" aria-hidden="true"></div>
@@ -508,6 +508,16 @@
                   <div class="setting-item__desc">Отправить меню в чат для быстрых действий</div>
                   <button class="btn btn--ghost" id="settings-bot-menu-btn">Отправить</button>
                 </div>
+                <div class="setting-item">
+                  <div class="setting-item__name">Нашли ошибку?</div>
+                  <div class="setting-item__desc">Сделай скриншот экрана и отправь нам в поддержку</div>
+                  <button class="btn btn--ghost" id="settings-bug-btn">Сообщить об ошибке</button>
+                </div>
+                <div class="setting-item">
+                  <div class="setting-item__name">Обратная связь</div>
+                  <div class="setting-item__desc">Идеи и пожелания по приложению</div>
+                  <button class="btn btn--ghost" id="settings-feedback-btn">Дать обратную связь</button>
+                </div>
               </div>
             </div>
           </div>
@@ -648,6 +658,33 @@
       </aside>
     </div>
 
+    <nav class="mobile-tabbar" aria-label="Навигация">
+      <button class="mobile-tabbar__btn active" data-nav="home" type="button">
+        <span class="mobile-tabbar__icon">⌂</span>
+        <span class="mobile-tabbar__label">Дом</span>
+      </button>
+      <button class="mobile-tabbar__btn" data-nav="mission" type="button">
+        <span class="mobile-tabbar__icon">▶</span>
+        <span class="mobile-tabbar__label">Миссия</span>
+      </button>
+      <button class="mobile-tabbar__btn" data-nav="progress" type="button">
+        <span class="mobile-tabbar__icon">◎</span>
+        <span class="mobile-tabbar__label">Прогресс</span>
+      </button>
+      <button class="mobile-tabbar__btn" data-nav="shop" type="button">
+        <span class="mobile-tabbar__icon">◈</span>
+        <span class="mobile-tabbar__label">Магазин</span>
+      </button>
+      <button class="mobile-tabbar__btn" data-nav="subscription" type="button">
+        <span class="mobile-tabbar__icon">★</span>
+        <span class="mobile-tabbar__label">Подписка</span>
+      </button>
+      <button class="mobile-tabbar__btn" data-nav="settings" type="button">
+        <span class="mobile-tabbar__icon">⚙</span>
+        <span class="mobile-tabbar__label">Настройки</span>
+      </button>
+    </nav>
+
     <div class="tour hidden" id="tour-overlay" aria-hidden="true">
       <div class="tour__shade tour__shade--top" id="tour-shade-top"></div>
       <div class="tour__shade tour__shade--left" id="tour-shade-left"></div>
@@ -665,6 +702,6 @@
       </div>
     </div>
 
-    <script src="app.js?v=20260214e"></script>
+    <script src="app.js?v=20260214f"></script>
   </body>
 </html>

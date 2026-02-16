@@ -8,11 +8,16 @@ import urllib.parse
 import urllib.request
 from dataclasses import dataclass
 
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update, WebAppInfo
-from telegram.ext import Application, CallbackQueryHandler, CommandHandler, ContextTypes
+from telegram import (
+    KeyboardButton,
+    ReplyKeyboardMarkup,
+    Update,
+    WebAppInfo,
+)
+from telegram.ext import Application, CallbackQueryHandler, CommandHandler, ContextTypes, MessageHandler, filters
 
 
-ASSET_VERSION = "20260214e"
+ASSET_VERSION = "20260214f"
 
 TRIBUTE_LINKS = {
     "CORE": {
@@ -55,17 +60,18 @@ def load_settings() -> Settings:
 SETTINGS = load_settings()
 
 
-def build_main_keyboard() -> InlineKeyboardMarkup:
+def build_bottom_keyboard() -> ReplyKeyboardMarkup:
     webapp_link = f"{SETTINGS.miniapp_url}/index-motif.html?v={ASSET_VERSION}"
-    return InlineKeyboardMarkup(
+    return ReplyKeyboardMarkup(
         [
-            [InlineKeyboardButton("Открыть Mini App", web_app=WebAppInfo(url=webapp_link))],
-            [
-                InlineKeyboardButton("Статус", callback_data="status"),
-                InlineKeyboardButton("Оплатить", callback_data="plans"),
-            ],
-            [InlineKeyboardButton("Поддержка", url="https://t.me/rawfitmax")],
-        ]
+            [KeyboardButton("Открыть Mini App", web_app=WebAppInfo(url=webapp_link))],
+            [KeyboardButton("Статус"), KeyboardButton("Оплатить")],
+            [KeyboardButton("Поддержка")],
+        ],
+        resize_keyboard=True,
+        one_time_keyboard=False,
+        is_persistent=True,
+        input_field_placeholder="Выбери действие",
     )
 
 
@@ -122,7 +128,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         return
     await update.message.reply_text(
         "Чит-код на сушку активирован.\nОткрой Mini App и проходи 1 уровень в день.",
-        reply_markup=build_main_keyboard(),
+        reply_markup=build_bottom_keyboard(),
     )
 
 
@@ -190,6 +196,24 @@ async def callbacks(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.callback_query.answer("Команда не распознана", show_alert=False)
 
 
+async def text_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if not update.message:
+        return
+    text = (update.message.text or "").strip().lower()
+    if not text:
+        return
+
+    if "статус" in text:
+        await status_cmd(update, context)
+        return
+    if "оплат" in text:
+        await plans_cmd(update, context)
+        return
+    if "поддерж" in text:
+        await support_cmd(update, context)
+        return
+
+
 def main() -> None:
     # Python 3.14 no longer creates a default event loop automatically.
     # python-telegram-bot still expects one before run_polling().
@@ -206,6 +230,7 @@ def main() -> None:
     app.add_handler(CommandHandler("id", id_cmd))
     app.add_handler(CommandHandler("chatid", chatid_cmd))
     app.add_handler(CallbackQueryHandler(callbacks))
+    app.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), text_router))
     app.run_polling(allowed_updates=Update.ALL_TYPES)
 
 

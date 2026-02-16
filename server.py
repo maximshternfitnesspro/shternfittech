@@ -41,8 +41,7 @@ NOTIFY_ON_PAYMENT = os.getenv("MINIAPP_NOTIFY_ON_PAYMENT", "1").strip() not in {
 TRIBUTE_API_KEY = (os.getenv("MINIAPP_TRIBUTE_API_KEY") or "").strip()
 TRIBUTE_WEBHOOK_SIGNATURE_SECRET = (os.getenv("MINIAPP_TRIBUTE_WEBHOOK_SIGNATURE_SECRET") or "").strip()
 ADMIN_TOKEN = (os.getenv("MINIAPP_ADMIN_TOKEN") or "").strip()
-SUPPORT_URL = (os.getenv("MINIAPP_SUPPORT_URL") or "https://t.me/rawfitmax").strip()
-MINIAPP_ASSET_VERSION = (os.getenv("MINIAPP_ASSET_VERSION") or "20260214e").strip()
+MINIAPP_ASSET_VERSION = (os.getenv("MINIAPP_ASSET_VERSION") or "20260214f").strip()
 MINIAPP_PUBLIC_URL = (os.getenv("MINIAPP_WEBAPP_URL") or "").strip().rstrip("/")
 
 # Optional: use Telegram channel/group membership as the source of truth for access.
@@ -85,15 +84,17 @@ def build_bot_menu_markup(request: Request) -> dict[str, Any]:
     home_url = miniapp_url_for(request)
     sub_url = miniapp_url_for(request, screen="subscription")
     progress_url = miniapp_url_for(request, screen="progress")
+    settings_url = miniapp_url_for(request, screen="settings")
     return {
-        "inline_keyboard": [
+        "keyboard": [
             [{"text": "Открыть Mini App", "web_app": {"url": home_url}}],
-            [
-                {"text": "Подписка", "web_app": {"url": sub_url}},
-                {"text": "Прогресс", "web_app": {"url": progress_url}},
-            ],
-            [{"text": "Поддержка", "url": SUPPORT_URL}],
-        ]
+            [{"text": "Подписка", "web_app": {"url": sub_url}}, {"text": "Прогресс", "web_app": {"url": progress_url}}],
+            [{"text": "Поддержка", "web_app": {"url": settings_url}}],
+        ],
+        "resize_keyboard": True,
+        "is_persistent": True,
+        "one_time_keyboard": False,
+        "input_field_placeholder": "Выбери действие",
     }
 
 

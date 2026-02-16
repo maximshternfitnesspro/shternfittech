@@ -10,6 +10,7 @@ const ONBOARDING_VERSION = 5;
 const DEMO_LEVEL_CAP = 3;
 const ALWAYS_SHOW_ONBOARDING = true;
 const TIER_RANK = { DEMO: 0, CORE: 1, BOOST: 2, ELITE: 3 };
+const SUPPORT_USERNAME = "rawfitmax";
 const STARTUP_SCREEN = (() => {
   const raw = new URLSearchParams(window.location.search).get("screen");
   const allowed = new Set(["home", "mission", "progress", "shop", "subscription", "settings"]);
@@ -192,6 +193,8 @@ const settingsWindowVal = document.getElementById("settings-window-val");
 const settingsResetMission = document.getElementById("settings-reset-mission");
 const settingsTourBtn = document.getElementById("settings-tour-btn");
 const settingsBotMenuBtn = document.getElementById("settings-bot-menu-btn");
+const settingsBugBtn = document.getElementById("settings-bug-btn");
+const settingsFeedbackBtn = document.getElementById("settings-feedback-btn");
 const settingsEffectsVal = document.getElementById("settings-effects-val");
 const subscriptionCurrentChip = document.getElementById("subscription-current-chip");
 const subscriptionHeadline = document.getElementById("subscription-headline");
@@ -303,14 +306,16 @@ const TOUR_STEPS = [
     target: () => progressRing,
   },
   {
-    title: "Меню",
-    text: "Если потерялся — жми «МЕНЮ»: там быстрый переход к Подписке, Прогрессу и Настройкам.",
+    title: "Нижняя навигация",
+    text: "Главные разделы теперь внизу экрана: переключайся по иконкам как в Telegram/Instagram.",
     prepare: () => {
       closeMobileDrawer();
       state.homeDetailsOpen = false;
       setActiveScreen("home");
     },
-    target: () => mobileMenuToggle,
+    target: () =>
+      document.querySelector('.mobile-tabbar__btn[data-nav="subscription"], .sidebar .nav__btn[data-nav="subscription"]') ||
+      mobileMenuToggle,
   },
 ];
 
@@ -360,6 +365,21 @@ function openExternalLink(url) {
     }
   }
   window.open(url, "_blank", "noopener,noreferrer");
+}
+
+function openSupportChat(prefilledText = "") {
+  const text = String(prefilledText || "").trim();
+  const encoded = encodeURIComponent(text);
+  const url = text ? `https://t.me/${SUPPORT_USERNAME}?text=${encoded}` : `https://t.me/${SUPPORT_USERNAME}`;
+  openExternalLink(url);
+}
+
+function buildFeedbackContext() {
+  const parts = [];
+  parts.push(`[Mini App] Уровень: ${String(state.level).padStart(2, "0")}`);
+  parts.push(`Подписка: ${state.subscription}`);
+  if (state.window) parts.push(`Окно: ${state.window}`);
+  return parts.join(" | ");
 }
 
 function buildShareText() {
@@ -2357,6 +2377,20 @@ if (!motifReady) {
         settingsBotMenuBtn.textContent = original;
         settingsBotMenuBtn.disabled = false;
       }, 1200);
+    });
+  }
+  if (settingsBugBtn) {
+    settingsBugBtn.addEventListener("click", () => {
+      playUiClick("ghost");
+      triggerHaptic("soft");
+      openSupportChat(`Нашел баг. Прикладываю скриншот.\n${buildFeedbackContext()}`);
+    });
+  }
+  if (settingsFeedbackBtn) {
+    settingsFeedbackBtn.addEventListener("click", () => {
+      playUiClick("ghost");
+      triggerHaptic("soft");
+      openSupportChat(`Обратная связь по Mini App:\n${buildFeedbackContext()}\nИдея: `);
     });
   }
   if (tourNextBtn) {
