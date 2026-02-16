@@ -323,6 +323,19 @@ function getTelegramWebApp() {
   return window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
 }
 
+function shouldUseMobileNavMode() {
+  const webApp = getTelegramWebApp();
+  if (webApp) {
+    const platform = String(webApp.platform || "").toLowerCase();
+    if (platform === "ios" || platform === "android") return true;
+  }
+  return window.matchMedia("(max-width: 980px)").matches;
+}
+
+function applyAdaptiveLayoutMode() {
+  document.body.classList.toggle("mobile-nav-mode", shouldUseMobileNavMode());
+}
+
 function triggerHaptic(kind = "soft") {
   const webApp = getTelegramWebApp();
   if (!webApp || !webApp.HapticFeedback) return;
@@ -2083,6 +2096,7 @@ function initLegacyPrototype() {
 if (!motifReady) {
   initLegacyPrototype();
 } else {
+  applyAdaptiveLayoutMode();
   document.addEventListener("pointerdown", unlockSfxContext, { passive: true, capture: true });
   document.addEventListener("touchstart", unlockSfxContext, { passive: true, capture: true });
   document.addEventListener("mousedown", unlockSfxContext, { passive: true, capture: true });
@@ -2240,8 +2254,10 @@ if (!motifReady) {
     } catch {}
   });
   window.addEventListener("resize", () => {
+    applyAdaptiveLayoutMode();
     refreshTourMask();
   });
+  window.addEventListener("orientationchange", applyAdaptiveLayoutMode);
   window.addEventListener(
     "scroll",
     () => {
