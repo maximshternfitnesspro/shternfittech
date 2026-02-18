@@ -17,7 +17,7 @@ from telegram import (
 from telegram.ext import Application, CallbackQueryHandler, CommandHandler, ContextTypes, MessageHandler, filters
 
 
-ASSET_VERSION = "20260214g"
+ASSET_VERSION = "20260215a"
 
 TRIBUTE_LINKS = {
     "CORE": {
@@ -64,9 +64,9 @@ def build_bottom_keyboard() -> ReplyKeyboardMarkup:
     webapp_link = f"{SETTINGS.miniapp_url}/index-motif.html?v={ASSET_VERSION}"
     return ReplyKeyboardMarkup(
         [
-            [KeyboardButton("Открыть Mini App", web_app=WebAppInfo(url=webapp_link))],
-            [KeyboardButton("Статус"), KeyboardButton("Оплатить")],
-            [KeyboardButton("Поддержка")],
+            [KeyboardButton("🚀 Открыть Mini App", web_app=WebAppInfo(url=webapp_link))],
+            [KeyboardButton("📊 Статус"), KeyboardButton("💳 Оплатить")],
+            [KeyboardButton("🛟 Поддержка")],
         ],
         resize_keyboard=True,
         one_time_keyboard=False,
@@ -107,19 +107,19 @@ def format_status_text(status: dict[str, str]) -> str:
 
 def plans_text() -> str:
     return (
-        "Тарифы:\n\n"
-        "CORE — 1 490 ₽/мес (2 990 ₽/3 мес)\n"
+        "💳 Тарифы:\n\n"
+        "🟦 CORE — 1 490 ₽/мес (2 990 ₽/3 мес)\n"
         f"{TRIBUTE_LINKS['CORE']['telegram']}\n\n"
-        "BOOST — 3 490 ₽/мес (6 990 ₽/3 мес)\n"
+        "🟪 BOOST — 3 490 ₽/мес (6 990 ₽/3 мес)\n"
         f"{TRIBUTE_LINKS['BOOST']['telegram']}\n\n"
-        "ELITE — 34 990 ₽ (разовая покупка)\n"
+        "🟥 ELITE — 34 990 ₽ (разовая покупка)\n"
         f"{TRIBUTE_LINKS['ELITE']['telegram']}"
     )
 
 def support_text() -> str:
     return (
-        "Поддержка: напиши @rawfitmax\n"
-        "Если оплата не открылась — нажми «Оплатить» и повтори попытку."
+        "🛟 Поддержка: @bemoresupport\n"
+        "Если оплата не открылась — нажми «💳 Оплатить» и повтори попытку."
     )
 
 
@@ -127,7 +127,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not update.message:
         return
     await update.message.reply_text(
-        "Чит-код на сушку активирован.\nОткрой Mini App и проходи 1 уровень в день.",
+        "⚡ Чит-код на сушку активирован.\nОткрой Mini App и проходи 1 уровень в день.",
         reply_markup=build_bottom_keyboard(),
     )
 

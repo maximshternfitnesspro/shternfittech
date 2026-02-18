@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Russo+One&display=swap" rel="stylesheet" />
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link rel="stylesheet" href="styles-motif.css?v=20260214g" />
+    <link rel="stylesheet" href="styles-motif.css?v=20260215a" />
   </head>
   <body>
     <div class="global-overlay" aria-hidden="true"></div>
@@ -103,8 +103,9 @@
           <div class="hud__tag">ЧИТ-КОД НА СУШКУ</div>
           <div class="hud__title">МОДУЛЬ: ПЕРЕЗАПУСК</div>
         </div>
-        <button class="mobile-menu-toggle" id="mobile-menu-toggle" aria-label="Открыть меню">
-          МЕНЮ
+        <button class="ecosystem-btn" id="ecosystem-btn" aria-label="Открыть экосистему">
+          <span class="ecosystem-btn__main">BE MORE</span>
+          <span class="ecosystem-btn__sub">HUB</span>
         </button>
         <div class="hud__net hidden" id="hud-net">NO SIGNAL</div>
         <div class="hud__stats">
@@ -224,13 +225,23 @@
             <div class="panel panel--secondary" id="sidequest-panel">
               <div class="panel__header">
                 <div class="panel__title">Дополнительное задание</div>
-                <div class="chip chip--cyan">МОД 01</div>
+                <div class="chip chip--cyan">МОД</div>
               </div>
               <div class="panel__body">
-                <div class="metric__value" id="sidequest-name">Белок в каждом приеме пищи</div>
-                <div class="metric__label">Даёт модификатор недели.</div>
+                <div class="sidequest-card">
+                  <div class="sidequest-card__icon">⚡</div>
+                  <div class="sidequest-card__content">
+                    <div class="sidequest-card__name" id="sidequest-name">Дойти до магазина пешком</div>
+                    <div class="sidequest-card__note" id="sidequest-note">
+                      Жизненная мини-миссия: без отдельной тренировки, но с ощущением прогресса.
+                    </div>
+                  </div>
+                </div>
+                <div class="sidequest-bonus">
+                  Награда: <strong id="sidequest-reward">МОДИФИКАТОР НЕДЕЛИ</strong>
+                </div>
                 <div class="cta-row">
-                  <button class="btn btn--ghost" id="sidequest-btn">Выполнено</button>
+                  <button class="btn btn--ghost" id="sidequest-btn">Отметить выполнение</button>
                 </div>
                 <div class="metric__label" id="sidequest-status">Статус: не выполнено</div>
               </div>
@@ -317,10 +328,18 @@
                   <div class="metric__value" id="progress-boss">4 уровней</div>
                 </div>
               </div>
-              <div class="progress-log" id="progress-log"></div>
-              <div class="cta-row">
-                <button class="btn btn--ghost" id="progress-share-btn">Поделиться прогрессом</button>
+              <div class="referral-card">
+                <div class="referral-card__title">Реферальная программа</div>
+                <div class="referral-card__text">
+                  Пригласи друга в Mini App. После запуска полной реф-системы получишь щедрый бонус за активных друзей.
+                </div>
+                <div class="referral-card__link" id="ref-link">https://t.me/cheatcodewith_bot</div>
+                <div class="cta-row referral-card__actions">
+                  <button class="btn btn--ghost" id="ref-copy-btn">Скопировать ссылку</button>
+                  <button class="btn btn--primary" id="progress-share-btn">Поделиться другу</button>
+                </div>
               </div>
+              <div class="progress-log" id="progress-log"></div>
               <div class="warning-block hidden" id="progress-paywall-block">
                 <div class="warning-block__title">Демо-модуль завершён</div>
                 <div class="warning-block__text">Прогресс сохранён. Для следующих уровней нужен платный доступ.</div>
@@ -339,58 +358,114 @@
               <div class="chip chip--pink" id="shop-balance">ЧИПЫ 420</div>
             </div>
             <div class="panel__body">
-              <div class="metric__label">Трать чипы на темы, эффекты и ранги.</div>
+              <div class="metric__label">Трать чипы на практичные гайды и видео-паки. После покупки жми «Открыть материал».</div>
               <div class="shop-grid">
                 <article class="shop-item">
-                  <div class="shop-item__name">Neon Lab</div>
-                  <div class="shop-item__desc">Чистый лабораторный неон. Холодный контроль.</div>
-                  <button class="btn btn--ghost shop-preview" data-preview="neon_lab">Превью 3 сек</button>
-                  <button class="btn btn--ghost shop-buy" data-item="neon_lab" data-cost="2200">Купить за 2200 чипов</button>
+                  <div class="shop-item__type">PDF-ГАЙД</div>
+                  <div class="shop-item__name">Умная тарелка: худей без подсчёта</div>
+                  <div class="shop-item__desc">Простая система питания для тех, кто не знает, что и когда есть для сушки.</div>
+                  <button
+                    class="btn btn--ghost shop-buy"
+                    data-item="smart_plate_pdf"
+                    data-cost="900"
+                    data-link="https://t.me/bemoresupport"
+                  >
+                    Купить за 900 чипов
+                  </button>
                 </article>
                 <article class="shop-item">
-                  <div class="shop-item__name">Blackout Red</div>
-                  <div class="shop-item__desc">Темнота + красная линия. Жёсткий режим.</div>
-                  <button class="btn btn--ghost shop-preview" data-preview="blackout_red">Превью 3 сек</button>
-                  <button class="btn btn--ghost shop-buy" data-item="blackout_red" data-cost="2800">Купить за 2800 чипов</button>
+                  <div class="shop-item__type">PDF-ГАЙД</div>
+                  <div class="shop-item__name">Анти-зажор: стоп стресс-еда</div>
+                  <div class="shop-item__desc">Алгоритм, как не заедать стресс и скуку, даже когда день «разносит» по эмоциям.</div>
+                  <button
+                    class="btn btn--ghost shop-buy"
+                    data-item="anti_binge_pdf"
+                    data-cost="1000"
+                    data-link="https://t.me/bemoresupport"
+                  >
+                    Купить за 1000 чипов
+                  </button>
                 </article>
                 <article class="shop-item">
-                  <div class="shop-item__name">Cold Cyan</div>
-                  <div class="shop-item__desc">Ледяной тон, максимум читаемости.</div>
-                  <button class="btn btn--ghost shop-preview" data-preview="cold_cyan">Превью 3 сек</button>
-                  <button class="btn btn--ghost shop-buy" data-item="cold_cyan" data-cost="3200">Купить за 3200 чипов</button>
+                  <div class="shop-item__type">PDF-ГАЙД</div>
+                  <div class="shop-item__name">Ночной дожор: контроль срывов</div>
+                  <div class="shop-item__desc">Что делать вечером и ночью, чтобы не срывать дефицит и не откатывать результат.</div>
+                  <button
+                    class="btn btn--ghost shop-buy"
+                    data-item="night_binge_pdf"
+                    data-cost="1000"
+                    data-link="https://t.me/bemoresupport"
+                  >
+                    Купить за 1000 чипов
+                  </button>
                 </article>
                 <article class="shop-item">
-                  <div class="shop-item__name">Hacker Noire</div>
-                  <div class="shop-item__desc">Глитч-атмосфера, максимальный кибер.</div>
-                  <button class="btn btn--ghost shop-preview" data-preview="hacker_noire">Превью 3 сек</button>
-                  <button class="btn btn--ghost shop-buy" data-item="hacker_noire" data-cost="4200">Купить за 4200 чипов</button>
+                  <div class="shop-item__type">PDF-ГАЙД</div>
+                  <div class="shop-item__name">Бока и живот: путь к прессу</div>
+                  <div class="shop-item__desc">Пошаговый план для зоны живота и боков: питание, ритм, ошибки и контроль прогресса.</div>
+                  <button
+                    class="btn btn--ghost shop-buy"
+                    data-item="belly_sides_pdf"
+                    data-cost="1200"
+                    data-link="https://t.me/bemoresupport"
+                  >
+                    Купить за 1200 чипов
+                  </button>
                 </article>
                 <article class="shop-item">
-                  <div class="shop-item__name">Пульсация кнопок</div>
-                  <div class="shop-item__desc">Активные зоны начинают дышать.</div>
-                  <button class="btn btn--ghost shop-preview" data-preview="btn_pulse">Превью 3 сек</button>
-                  <button class="btn btn--ghost shop-buy" data-item="btn_pulse" data-cost="1200">Купить за 1200 чипов</button>
+                  <div class="shop-item__type">ВИДЕО</div>
+                  <div class="shop-item__name">Мотивация 3 минуты: когда сдулся</div>
+                  <div class="shop-item__desc">Короткий разгон в голову перед тренировкой, когда нет сил и включается «потом».</div>
+                  <button
+                    class="btn btn--ghost shop-buy"
+                    data-item="motivation_video"
+                    data-cost="700"
+                    data-link="https://t.me/bemoresupport"
+                  >
+                    Купить за 700 чипов
+                  </button>
                 </article>
                 <article class="shop-item">
-                  <div class="shop-item__name">Скан-линии</div>
-                  <div class="shop-item__desc">Лёгкий HUD-скан поверх интерфейса.</div>
-                  <button class="btn btn--ghost shop-preview" data-preview="scan_lines">Превью 3 сек</button>
-                  <button class="btn btn--ghost shop-buy" data-item="scan_lines" data-cost="1500">Купить за 1500 чипов</button>
+                  <div class="shop-item__type">ВИДЕО-ПАК</div>
+                  <div class="shop-item__name">Ноги и ягодицы: антидряблость</div>
+                  <div class="shop-item__desc">Присед, выпады, румынская тяга и ягодичный мост с твоими пояснениями в коротком формате.</div>
+                  <button
+                    class="btn btn--ghost shop-buy"
+                    data-item="legs_glutes_pack"
+                    data-cost="1800"
+                    data-link="https://www.youtube.com/playlist?list=PLb4Ou10Gnnm_7XmnZy-b6E5linHwddGgD"
+                  >
+                    Купить за 1800 чипов
+                  </button>
                 </article>
                 <article class="shop-item">
-                  <div class="shop-item__name">Глитч-подсветка</div>
-                  <div class="shop-item__desc">Краткий глитч при важных событиях.</div>
-                  <button class="btn btn--ghost shop-preview" data-preview="glitch_glow">Превью 3 сек</button>
-                  <button class="btn btn--ghost shop-buy" data-item="glitch_glow" data-cost="2100">Купить за 2100 чипов</button>
+                  <div class="shop-item__type">ВИДЕО-ПАК</div>
+                  <div class="shop-item__name">Верх тела: осанка и сила</div>
+                  <div class="shop-item__desc">Отжимания, жим над головой и тяга в наклоне — техника без воды, в 40–60 секунд.</div>
+                  <button
+                    class="btn btn--ghost shop-buy"
+                    data-item="upper_body_pack"
+                    data-cost="1800"
+                    data-link="https://www.youtube.com/playlist?list=PLb4Ou10Gnnm-J2XtqGNcu-ttchlXMPBuj"
+                  >
+                    Купить за 1800 чипов
+                  </button>
                 </article>
                 <article class="shop-item">
-                  <div class="shop-item__name">Световой след</div>
-                  <div class="shop-item__desc">Шлейф при движении по интерфейсу.</div>
-                  <button class="btn btn--ghost shop-preview" data-preview="light_trail">Превью 3 сек</button>
-                  <button class="btn btn--ghost shop-buy" data-item="light_trail" data-cost="2400">Купить за 2400 чипов</button>
+                  <div class="shop-item__type">ВИДЕО-ПАК</div>
+                  <div class="shop-item__name">Кор и кондиция: пресс под нагрузкой</div>
+                  <div class="shop-item__desc">Скручивания, планка и бёрпи — связка для пресса, выносливости и жиросжигания.</div>
+                  <button
+                    class="btn btn--ghost shop-buy"
+                    data-item="core_condition_pack"
+                    data-cost="1800"
+                    data-link="https://www.youtube.com/playlist?list=PLb4Ou10Gnnm8XbmNKhGQgrVWeX0fa3V-W"
+                  >
+                    Купить за 1800 чипов
+                  </button>
                 </article>
               </div>
-              <div class="metric__label" id="shop-message">Выбери улучшение.</div>
+              <div class="metric__label" id="shop-message">Выбери материал для прокачки.</div>
             </div>
           </div>
         </section>
@@ -504,19 +579,11 @@
                   <button class="btn btn--ghost" id="settings-tour-btn">Запустить тур</button>
                 </div>
                 <div class="setting-item">
-                  <div class="setting-item__name">Кнопки в боте</div>
-                  <div class="setting-item__desc">Отправить меню в чат для быстрых действий</div>
-                  <button class="btn btn--ghost" id="settings-bot-menu-btn">Отправить</button>
-                </div>
-                <div class="setting-item">
-                  <div class="setting-item__name">Нашли ошибку?</div>
-                  <div class="setting-item__desc">Сделай скриншот экрана и отправь нам в поддержку</div>
-                  <button class="btn btn--ghost" id="settings-bug-btn">Сообщить об ошибке</button>
-                </div>
-                <div class="setting-item">
-                  <div class="setting-item__name">Обратная связь</div>
-                  <div class="setting-item__desc">Идеи и пожелания по приложению</div>
-                  <button class="btn btn--ghost" id="settings-feedback-btn">Дать обратную связь</button>
+                  <div class="setting-item__name">Поддержка и обратная связь</div>
+                  <div class="setting-item__desc">
+                    Нашли ошибку или есть идея? Напиши нам в поддержку, прикрепи скрин и короткое описание.
+                  </div>
+                  <button class="btn btn--ghost" id="settings-support-btn">Открыть t.me/bemoresupport</button>
                 </div>
               </div>
             </div>
@@ -578,14 +645,14 @@
 
       <footer class="dock">
         <div class="dock__panel">
-          <div class="dock__title">Быстрые настройки</div>
-          <div class="dock__row">
-            <div class="slider">
-              <span>Гидра-контроль: выпито за день</span>
-              <div class="slider__track"><div class="slider__fill" id="hydration-fill" style="width: 45%"></div></div>
-              <input class="slider__input" id="hydration-input" type="range" min="0" max="2500" step="50" value="1200" />
-              <div class="slider__meta" id="hydration-meta">1200 мл / 2500 мл · 5 стаканов</div>
-            </div>
+          <div class="dock__title">Оперативный центр</div>
+          <div class="dock-actions">
+            <button class="btn btn--primary" id="dock-share-btn">Пригласить друга</button>
+            <button class="btn btn--ghost" id="dock-support-btn">Нашли ошибку? Сообщить</button>
+            <button class="btn btn--ghost be-more-dock-btn" id="dock-ecosystem-btn">
+              <span class="be-more-dock-btn__title">BE MORE HUB</span>
+              <span class="be-more-dock-btn__sub">Планнер задач + бот меню питания</span>
+            </button>
           </div>
         </div>
       </footer>
@@ -640,6 +707,38 @@
       </div>
     </div>
 
+    <div class="modules-modal hidden" id="ecosystem-modal" aria-hidden="true">
+      <div class="modules-modal__backdrop" id="ecosystem-modal-backdrop"></div>
+      <div class="modules-modal__card ecosystem-modal-card">
+        <div class="modules-modal__head">
+          <div class="modules-modal__title">BE MORE HUB</div>
+          <button class="btn btn--ghost modules-modal__close" id="ecosystem-modal-close">Закрыть</button>
+        </div>
+        <div class="modules-modal__note">
+          Единая экосистема: основной Mini App + дополнительные боты для дисциплины и питания.
+        </div>
+        <div class="modules-modal__grid">
+          <article class="module-card module-card--locked">
+            <div class="module-card__title">TASK PLANNER</div>
+            <div class="module-card__desc">
+              Планнер задач на день: приоритеты, мини-дедлайны и контроль выполнения.
+            </div>
+            <div class="chip chip--pink">Скоро</div>
+          </article>
+          <article class="module-card module-card--locked">
+            <div class="module-card__title">MENU PILOT</div>
+            <div class="module-card__desc">
+              Бот для меню питания: быстрый рацион под сушку без ручного подсчёта.
+            </div>
+            <div class="chip chip--pink">Скоро</div>
+          </article>
+        </div>
+        <div class="cta-row ecosystem-modal__actions">
+          <button class="btn btn--primary" id="ecosystem-waitlist-btn">Записаться в ранний доступ</button>
+        </div>
+      </div>
+    </div>
+
     <div class="mobile-drawer hidden" id="mobile-drawer" aria-hidden="true">
       <div class="mobile-drawer__backdrop" id="mobile-drawer-backdrop"></div>
       <aside class="mobile-drawer__panel">
@@ -673,15 +772,15 @@
       </button>
       <button class="mobile-tabbar__btn" data-nav="shop" type="button">
         <span class="mobile-tabbar__icon">◈</span>
-        <span class="mobile-tabbar__label">Магазин</span>
+        <span class="mobile-tabbar__label">ШОП</span>
       </button>
       <button class="mobile-tabbar__btn" data-nav="subscription" type="button">
         <span class="mobile-tabbar__icon">★</span>
-        <span class="mobile-tabbar__label">Подписка</span>
+        <span class="mobile-tabbar__label">Тариф</span>
       </button>
       <button class="mobile-tabbar__btn" data-nav="settings" type="button">
         <span class="mobile-tabbar__icon">⚙</span>
-        <span class="mobile-tabbar__label">Настройки</span>
+        <span class="mobile-tabbar__label">Опции</span>
       </button>
     </nav>
 
@@ -702,6 +801,6 @@
       </div>
     </div>
 
-    <script src="app.js?v=20260214g"></script>
+    <script src="app.js?v=20260215a"></script>
   </body>
 </html>

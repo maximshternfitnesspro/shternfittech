@@ -10,7 +10,8 @@ const ONBOARDING_VERSION = 5;
 const DEMO_LEVEL_CAP = 3;
 const ALWAYS_SHOW_ONBOARDING = true;
 const TIER_RANK = { DEMO: 0, CORE: 1, BOOST: 2, ELITE: 3 };
-const SUPPORT_USERNAME = "rawfitmax";
+const SUPPORT_USERNAME = "bemoresupport";
+const MAIN_BOT_LINK = "https://t.me/cheatcodewith_bot";
 const STARTUP_SCREEN = (() => {
   const raw = new URLSearchParams(window.location.search).get("screen");
   const allowed = new Set(["home", "mission", "progress", "shop", "subscription", "settings"]);
@@ -92,6 +93,28 @@ const MISSION_NAMES = [
 ];
 
 const MODIFIERS = ["Синхро-щит", "Ускорение", "Двойной бонус окна", "Стабилизация"];
+const SIDE_QUESTS = [
+  {
+    name: "Дойти до магазина пешком",
+    note: "Закрыть шаги без отдельной тренировки: выбери пеший маршрут вместо транспорта.",
+  },
+  {
+    name: "Заменить один перекус на белок",
+    note: "Стабилизируй аппетит: йогурт/творог/яйца вместо случайных сладких перекусов.",
+  },
+  {
+    name: "10 минут прогулки после еды",
+    note: "Снять тягу к сладкому и улучшить восстановление после приёма пищи.",
+  },
+  {
+    name: "Ужин без сахара перед сном",
+    note: "Контроль ночного голода: без сладкого и мучного в последнем приёме пищи.",
+  },
+  {
+    name: "2 литра воды за день",
+    note: "Проверь дисциплину: добери воду равномерно, а не в конце дня.",
+  },
+];
 
 const screens = document.querySelectorAll("[data-screen]");
 const navButtons = document.querySelectorAll("[data-nav]");
@@ -100,13 +123,15 @@ const ctaStart = document.getElementById("cta-start");
 const moduleSwitchBtn = document.getElementById("module-switch-btn");
 const sideQuestBtn = document.getElementById("sidequest-btn");
 const sideQuestPanel = document.getElementById("sidequest-panel");
+const sideQuestNameEl = document.getElementById("sidequest-name");
+const sideQuestNoteEl = document.getElementById("sidequest-note");
+const sideQuestRewardEl = document.getElementById("sidequest-reward");
 const resultNextBtn = document.getElementById("result-next");
 
 const missionStartBtn = document.getElementById("mission-start");
 const missionWatchFill = document.getElementById("mission-watch-fill");
 
 const shopButtons = document.querySelectorAll(".shop-buy");
-const shopPreviewButtons = document.querySelectorAll(".shop-preview");
 const shopMessage = document.getElementById("shop-message");
 
 const bootScreen = document.getElementById("boot-screen");
@@ -164,6 +189,8 @@ const progressLog = document.getElementById("progress-log");
 const progressPaywallBlock = document.getElementById("progress-paywall-block");
 const progressPaywallBtn = document.getElementById("progress-paywall-btn");
 const progressShareBtn = document.getElementById("progress-share-btn");
+const refLink = document.getElementById("ref-link");
+const refCopyBtn = document.getElementById("ref-copy-btn");
 
 const resultMainReward = document.getElementById("result-main-reward");
 const resultBonusReward = document.getElementById("result-bonus-reward");
@@ -183,18 +210,13 @@ const energyValue = document.getElementById("energy-value");
 const hydrationBar = document.getElementById("hydration-bar");
 const hydrationValue = document.getElementById("hydration-value");
 
-const hydrationInput = document.getElementById("hydration-input");
-const hydrationFill = document.getElementById("hydration-fill");
-const hydrationMeta = document.getElementById("hydration-meta");
 const missionAvailability = document.getElementById("mission-availability");
 
 const settingsRemindersBtn = document.getElementById("settings-reminders-btn");
 const settingsWindowVal = document.getElementById("settings-window-val");
 const settingsResetMission = document.getElementById("settings-reset-mission");
 const settingsTourBtn = document.getElementById("settings-tour-btn");
-const settingsBotMenuBtn = document.getElementById("settings-bot-menu-btn");
-const settingsBugBtn = document.getElementById("settings-bug-btn");
-const settingsFeedbackBtn = document.getElementById("settings-feedback-btn");
+const settingsSupportBtn = document.getElementById("settings-support-btn");
 const settingsEffectsVal = document.getElementById("settings-effects-val");
 const subscriptionCurrentChip = document.getElementById("subscription-current-chip");
 const subscriptionHeadline = document.getElementById("subscription-headline");
@@ -212,10 +234,17 @@ const demoPaywall = document.getElementById("demo-paywall");
 const demoPaywallBackdrop = document.getElementById("demo-paywall-backdrop");
 const demoPaywallClose = document.getElementById("demo-paywall-close");
 const demoPaywallOpenBtn = document.getElementById("demo-paywall-open-btn");
-const mobileMenuToggle = document.getElementById("mobile-menu-toggle");
+const ecosystemBtn = document.getElementById("ecosystem-btn");
+const dockShareBtn = document.getElementById("dock-share-btn");
+const dockSupportBtn = document.getElementById("dock-support-btn");
+const dockEcosystemBtn = document.getElementById("dock-ecosystem-btn");
 const mobileDrawer = document.getElementById("mobile-drawer");
 const mobileDrawerBackdrop = document.getElementById("mobile-drawer-backdrop");
 const mobileDrawerClose = document.getElementById("mobile-drawer-close");
+const ecosystemModal = document.getElementById("ecosystem-modal");
+const ecosystemModalBackdrop = document.getElementById("ecosystem-modal-backdrop");
+const ecosystemModalClose = document.getElementById("ecosystem-modal-close");
+const ecosystemWaitlistBtn = document.getElementById("ecosystem-waitlist-btn");
 const tourOverlay = document.getElementById("tour-overlay");
 const tourShadeTop = document.getElementById("tour-shade-top");
 const tourShadeLeft = document.getElementById("tour-shade-left");
@@ -240,7 +269,6 @@ const motifReady = Boolean(
     shopBalance &&
     modifierValue &&
     bossBanner &&
-    hydrationInput &&
     settingsRemindersBtn &&
     settingsResetMission,
 );
@@ -279,13 +307,13 @@ const TOUR_STEPS = [
   },
   {
     title: "Дополнительное задание",
-    text: "Необязательная активность. Даёт модификатор недели.",
+    text: "Жизненная мини-миссия дня. Закрываешь — получаешь модификатор недели.",
     prepare: () => {
       closeMobileDrawer();
       state.homeDetailsOpen = true;
       setActiveScreen("home");
     },
-    target: () => sideQuestPanel || sideQuestBtn,
+    target: () => sideQuestBtn || sideQuestPanel,
   },
   {
     title: "Подписка",
@@ -306,16 +334,14 @@ const TOUR_STEPS = [
     target: () => progressRing,
   },
   {
-    title: "Нижняя навигация",
-    text: "Главные разделы теперь внизу экрана: переключайся по иконкам как в Telegram/Instagram.",
+    title: "BE MORE HUB",
+    text: "Единая экосистема ботов: планнер задач и меню-помощник будут открываться отсюда.",
     prepare: () => {
       closeMobileDrawer();
       state.homeDetailsOpen = false;
       setActiveScreen("home");
     },
-    target: () =>
-      document.querySelector('.mobile-tabbar__btn[data-nav="subscription"], .sidebar .nav__btn[data-nav="subscription"]') ||
-      mobileMenuToggle,
+    target: () => ecosystemBtn || dockEcosystemBtn || document.querySelector('.mobile-tabbar__btn[data-nav="settings"]'),
   },
 ];
 
@@ -382,8 +408,11 @@ function openExternalLink(url) {
 
 function openSupportChat(prefilledText = "") {
   const text = String(prefilledText || "").trim();
-  const encoded = encodeURIComponent(text);
-  const url = text ? `https://t.me/${SUPPORT_USERNAME}?text=${encoded}` : `https://t.me/${SUPPORT_USERNAME}`;
+  if (text && navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+    // Keep context in clipboard, then open support chat directly.
+    navigator.clipboard.writeText(text).catch(() => {});
+  }
+  const url = `https://t.me/${SUPPORT_USERNAME}`;
   openExternalLink(url);
 }
 
@@ -406,16 +435,22 @@ function buildShareText() {
   if (state.subscription === "DEMO") {
     const left = demoLevelsLeft();
     const tail = left > 0 ? `До конца демо: ${formatLevelCount(left)}` : "Демо завершено";
-    return `Чит-код на сушку — ${progress}. ${tail}.`;
+    return `Я в «Чит-код на сушку»: ${progress}. ${tail}. Присоединяйся в команду.`;
   }
 
   const distance = levelsToBoss(bossReferenceLevel);
   const tail = distance > 0 ? `До босса: ${formatLevelCount(distance)}` : "Босс цикла пройден.";
-  return `Чит-код на сушку — ${progress}. ${tail}`;
+  return `Я в «Чит-код на сушку»: ${progress}. ${tail}.`;
+}
+
+function getReferralLink() {
+  const tgUserId = getTelegramUserId();
+  if (!tgUserId) return MAIN_BOT_LINK;
+  return `${MAIN_BOT_LINK}?start=${encodeURIComponent(`ref_${tgUserId}`)}`;
 }
 
 async function shareProgress() {
-  const shareUrl = "https://t.me/cheatcodewith_bot";
+  const shareUrl = getReferralLink();
   const text = buildShareText();
   try {
     if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
@@ -1189,7 +1224,7 @@ function triggerPreview(previewId) {
   previewTimer = setTimeout(() => {
     clearPreviewMode();
     previewTimer = null;
-    shopMessage.textContent = "Выбери улучшение.";
+    shopMessage.textContent = "Выбери материал для прокачки.";
   }, 3000);
 }
 
@@ -1198,9 +1233,20 @@ function energyStatus(completedLevels) {
 }
 
 function hydrationStatus(percent, hydrationMl) {
-  if (percent < 45) return `${hydrationMl} мл · ниже цели`;
-  if (percent < 75) return `${hydrationMl} мл · рабочий баланс`;
+  if (percent < 45) return `${hydrationMl} мл · нижний диапазон`;
+  if (percent < 75) return `${hydrationMl} мл · рабочий диапазон`;
   return `${hydrationMl} мл · цель закрыта`;
+}
+
+function sideQuestForLevel(level) {
+  if (!SIDE_QUESTS.length) {
+    return {
+      name: "Дойти до магазина пешком",
+      note: "Жизненная мини-миссия: без отдельной тренировки, но с ощущением прогресса.",
+    };
+  }
+  const index = clamp((Number(level) || 1) - 1, 0, 9999) % SIDE_QUESTS.length;
+  return SIDE_QUESTS[index];
 }
 
 function metricsSnapshot() {
@@ -1210,7 +1256,7 @@ function metricsSnapshot() {
   const sideContribution = state.sideQuestDone ? 15 : 0;
   const energy = clamp(50 + mainContribution + sideContribution, 20, 100);
 
-  const hydrationMl = clamp(Math.round(state.quick.hydrationMl), 0, HYDRATION_TARGET_ML);
+  const hydrationMl = clamp(Math.round(950 + completedLevels * 52 + (state.sideQuestDone ? 180 : 0)), 0, HYDRATION_TARGET_ML);
   const hydrationPercent = clamp(Math.round((hydrationMl / HYDRATION_TARGET_ML) * 100), 0, 100);
 
   return { energy, hydrationMl, hydrationPercent, completedLevels };
@@ -1394,6 +1440,10 @@ function render() {
   }
   if (homeAccessRule) homeAccessRule.textContent = missionAccessNote(subscriptionInfo);
   if (homePaywallBlock) homePaywallBlock.classList.toggle("hidden", !demoFinished);
+  const sideQuest = sideQuestForLevel(state.level);
+  if (sideQuestNameEl) sideQuestNameEl.textContent = sideQuest.name;
+  if (sideQuestNoteEl) sideQuestNoteEl.textContent = sideQuest.note;
+  if (sideQuestRewardEl) sideQuestRewardEl.textContent = state.sideQuestDone ? state.modifier.toUpperCase() : "МОДИФИКАТОР НЕДЕЛИ";
 
   missionPanelTitle.textContent = `Миссия: ${missionName}`;
   if (missionAvailability) missionAvailability.textContent = missionAccessNote(subscriptionInfo);
@@ -1444,6 +1494,7 @@ function render() {
       .join("");
   }
   if (progressPaywallBlock) progressPaywallBlock.classList.toggle("hidden", !demoFinished);
+  if (refLink) refLink.textContent = getReferralLink();
 
   shopBalance.textContent = `ЧИПЫ ${state.chips}`;
   modifierValue.textContent = state.modifier;
@@ -1475,18 +1526,12 @@ function render() {
   hydrationBar.style.width = `${metrics.hydrationPercent}%`;
   hydrationValue.textContent = `${metrics.hydrationPercent}% · ${hydrationStatus(metrics.hydrationPercent, metrics.hydrationMl)}`;
 
-  hydrationInput.value = String(metrics.hydrationMl);
-  hydrationFill.style.width = `${metrics.hydrationPercent}%`;
-  if (hydrationMeta) {
-    const glasses = Math.max(0, Math.round(metrics.hydrationMl / GLASS_ML));
-    hydrationMeta.textContent = `${metrics.hydrationMl} мл / ${HYDRATION_TARGET_ML} мл · ${glasses} стаканов`;
-  }
-
   settingsRemindersBtn.textContent = state.remindersEnabled ? "Включены" : "Отключены";
   settingsWindowVal.textContent = state.window;
   if (settingsEffectsVal) settingsEffectsVal.textContent = `${metrics.hydrationMl} мл / ${HYDRATION_TARGET_ML} мл`;
 
-  sideQuestStatus.textContent = state.sideQuestDone ? `Статус: выполнено (${state.modifier})` : "Статус: не выполнено";
+  sideQuestStatus.textContent = state.sideQuestDone ? `Статус: выполнено · ${state.modifier}` : "Статус: не выполнено";
+  sideQuestBtn.textContent = state.sideQuestDone ? "Допзадание закрыто" : "Отметить выполнение";
   sideQuestBtn.disabled = state.sideQuestDone || subscriptionInfo.expired || demoFinished;
 
   if (resultUnlockNote) {
@@ -1517,10 +1562,11 @@ function syncShopButtons() {
     const cost = Number(button.dataset.cost);
     const itemId = button.dataset.item;
     const purchased = Boolean(state.purchases[itemId]);
+    const hasLink = Boolean(String(button.dataset.link || "").trim());
     if (purchased) {
-      button.textContent = "Активировано";
+      button.textContent = hasLink ? "Открыть материал" : "Получить в поддержке";
       button.classList.add("is-purchased");
-      button.disabled = true;
+      button.disabled = false;
       return;
     }
     button.textContent = `Купить за ${cost} чипов`;
@@ -1613,8 +1659,18 @@ function handleShopPurchase(event) {
   const button = event.currentTarget;
   const cost = Number(button.dataset.cost);
   const itemId = button.dataset.item;
+  const link = String(button.dataset.link || "").trim();
 
-  if (state.purchases[itemId]) return;
+  if (state.purchases[itemId]) {
+    if (link) {
+      shopMessage.textContent = "Открываю материал...";
+      openExternalLink(link);
+    } else {
+      shopMessage.textContent = "Материал выдается через поддержку.";
+      openSupportChat();
+    }
+    return;
+  }
 
   if (state.chips < cost) {
     shopMessage.textContent = "Недостаточно чипов. Заверши миссию и вернись в магазин.";
@@ -1623,10 +1679,16 @@ function handleShopPurchase(event) {
 
   state.chips -= cost;
   state.purchases[itemId] = true;
-  shopMessage.textContent = "Активировано. Интерфейс обновлён.";
+  shopMessage.textContent = "Покупка успешна. Материал открыт.";
 
   saveState();
   render();
+
+  if (link) {
+    openExternalLink(link);
+  } else {
+    openSupportChat();
+  }
 }
 
 function handleShopPreview(event) {
@@ -1696,7 +1758,8 @@ function syncBodyLock() {
   const modulesOpen = modulesModal && !modulesModal.classList.contains("hidden");
   const paywallOpen = demoPaywall && !demoPaywall.classList.contains("hidden");
   const drawerOpen = mobileDrawer && !mobileDrawer.classList.contains("hidden");
-  document.body.classList.toggle("modal-open", Boolean(modulesOpen || paywallOpen || drawerOpen));
+  const ecosystemOpen = ecosystemModal && !ecosystemModal.classList.contains("hidden");
+  document.body.classList.toggle("modal-open", Boolean(modulesOpen || paywallOpen || drawerOpen || ecosystemOpen));
 }
 
 function openModulesModal() {
@@ -1724,6 +1787,20 @@ function closeDemoPaywall() {
   if (!demoPaywall) return;
   demoPaywall.classList.add("hidden");
   demoPaywall.setAttribute("aria-hidden", "true");
+  syncBodyLock();
+}
+
+function openEcosystemModal() {
+  if (!ecosystemModal) return;
+  ecosystemModal.classList.remove("hidden");
+  ecosystemModal.setAttribute("aria-hidden", "false");
+  syncBodyLock();
+}
+
+function closeEcosystemModal() {
+  if (!ecosystemModal) return;
+  ecosystemModal.classList.add("hidden");
+  ecosystemModal.setAttribute("aria-hidden", "true");
   syncBodyLock();
 }
 
@@ -2160,6 +2237,35 @@ if (!motifReady) {
       }
     });
   }
+  if (refCopyBtn) {
+    refCopyBtn.addEventListener("click", async () => {
+      playUiClick("ghost");
+      triggerHaptic("soft");
+      const link = getReferralLink();
+      try {
+        if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+          await navigator.clipboard.writeText(link);
+        }
+        if (shopMessage) shopMessage.textContent = "Реферальная ссылка скопирована.";
+      } catch {
+        if (shopMessage) shopMessage.textContent = "Не удалось скопировать ссылку. Поделись вручную.";
+      }
+    });
+  }
+  if (dockShareBtn) {
+    dockShareBtn.addEventListener("click", async () => {
+      playUiClick("upgrade");
+      triggerHaptic("heavy");
+      await shareProgress();
+    });
+  }
+  if (dockSupportBtn) {
+    dockSupportBtn.addEventListener("click", () => {
+      playUiClick("ghost");
+      triggerHaptic("soft");
+      openSupportChat(buildFeedbackContext());
+    });
+  }
   if (arsenalModuleBtn) {
     arsenalModuleBtn.addEventListener("click", () => {
       if (isDemoFinished()) {
@@ -2208,11 +2314,35 @@ if (!motifReady) {
   if (demoPaywallBackdrop) {
     demoPaywallBackdrop.addEventListener("click", closeDemoPaywall);
   }
-  if (mobileMenuToggle) {
-    mobileMenuToggle.addEventListener("click", () => {
+  if (ecosystemBtn) {
+    ecosystemBtn.addEventListener("click", () => {
+      playUiClick("upgrade");
+      triggerHaptic("heavy");
+      openEcosystemModal();
+    });
+  }
+  if (dockEcosystemBtn) {
+    dockEcosystemBtn.addEventListener("click", () => {
+      playUiClick("upgrade");
+      triggerHaptic("heavy");
+      openEcosystemModal();
+    });
+  }
+  if (ecosystemModalClose) {
+    ecosystemModalClose.addEventListener("click", () => {
       playUiClick("ghost");
       triggerHaptic("soft");
-      openMobileDrawer();
+      closeEcosystemModal();
+    });
+  }
+  if (ecosystemModalBackdrop) {
+    ecosystemModalBackdrop.addEventListener("click", closeEcosystemModal);
+  }
+  if (ecosystemWaitlistBtn) {
+    ecosystemWaitlistBtn.addEventListener("click", () => {
+      playUiClick("primary");
+      triggerHaptic("heavy");
+      openSupportChat("Хочу в ранний доступ BE MORE HUB.");
     });
   }
   if (mobileDrawerClose) {
@@ -2229,6 +2359,7 @@ if (!motifReady) {
     if (event.key !== "Escape") return;
     closeModulesModal();
     closeDemoPaywall();
+    closeEcosystemModal();
     closeMobileDrawer();
     if (tourActive) finishTour(true);
   });
@@ -2293,13 +2424,6 @@ if (!motifReady) {
       handleShopPurchase(event);
     }),
   );
-  shopPreviewButtons.forEach((button) =>
-    button.addEventListener("click", (event) => {
-      playUiClick("ghost");
-      triggerHaptic("soft");
-      handleShopPreview(event);
-    }),
-  );
   if (sidebarUpgradeBtn) {
     sidebarUpgradeBtn.addEventListener("click", () => {
       playUiClick("upgrade");
@@ -2362,7 +2486,6 @@ if (!motifReady) {
       }
     });
   }
-  hydrationInput.addEventListener("input", (event) => updateHydration(event.target.value));
   settingsRemindersBtn.addEventListener("click", () => {
     playUiClick("ghost");
     triggerHaptic("soft");
@@ -2380,33 +2503,11 @@ if (!motifReady) {
       startTour();
     });
   }
-  if (settingsBotMenuBtn) {
-    settingsBotMenuBtn.addEventListener("click", async () => {
+  if (settingsSupportBtn) {
+    settingsSupportBtn.addEventListener("click", () => {
       playUiClick("ghost");
       triggerHaptic("soft");
-      const original = settingsBotMenuBtn.textContent;
-      settingsBotMenuBtn.textContent = "Отправляю…";
-      settingsBotMenuBtn.disabled = true;
-      const ok = await maybeSendBotMenu({ force: true });
-      settingsBotMenuBtn.textContent = ok ? "Отправлено" : "Ошибка";
-      setTimeout(() => {
-        settingsBotMenuBtn.textContent = original;
-        settingsBotMenuBtn.disabled = false;
-      }, 1200);
-    });
-  }
-  if (settingsBugBtn) {
-    settingsBugBtn.addEventListener("click", () => {
-      playUiClick("ghost");
-      triggerHaptic("soft");
-      openSupportChat(`Нашел баг. Прикладываю скриншот.\n${buildFeedbackContext()}`);
-    });
-  }
-  if (settingsFeedbackBtn) {
-    settingsFeedbackBtn.addEventListener("click", () => {
-      playUiClick("ghost");
-      triggerHaptic("soft");
-      openSupportChat(`Обратная связь по Mini App:\n${buildFeedbackContext()}\nИдея: `);
+      openSupportChat(buildFeedbackContext());
     });
   }
   if (tourNextBtn) {

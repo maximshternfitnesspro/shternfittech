@@ -41,7 +41,7 @@ NOTIFY_ON_PAYMENT = os.getenv("MINIAPP_NOTIFY_ON_PAYMENT", "1").strip() not in {
 TRIBUTE_API_KEY = (os.getenv("MINIAPP_TRIBUTE_API_KEY") or "").strip()
 TRIBUTE_WEBHOOK_SIGNATURE_SECRET = (os.getenv("MINIAPP_TRIBUTE_WEBHOOK_SIGNATURE_SECRET") or "").strip()
 ADMIN_TOKEN = (os.getenv("MINIAPP_ADMIN_TOKEN") or "").strip()
-MINIAPP_ASSET_VERSION = (os.getenv("MINIAPP_ASSET_VERSION") or "20260214g").strip()
+MINIAPP_ASSET_VERSION = (os.getenv("MINIAPP_ASSET_VERSION") or "20260215a").strip()
 MINIAPP_PUBLIC_URL = (os.getenv("MINIAPP_WEBAPP_URL") or "").strip().rstrip("/")
 
 # Optional: use Telegram channel/group membership as the source of truth for access.
@@ -87,9 +87,12 @@ def build_bot_menu_markup(request: Request) -> dict[str, Any]:
     settings_url = miniapp_url_for(request, screen="settings")
     return {
         "keyboard": [
-            [{"text": "Открыть Mini App", "web_app": {"url": home_url}}],
-            [{"text": "Подписка", "web_app": {"url": sub_url}}, {"text": "Прогресс", "web_app": {"url": progress_url}}],
-            [{"text": "Поддержка", "web_app": {"url": settings_url}}],
+            [{"text": "🚀 Открыть Mini App", "web_app": {"url": home_url}}],
+            [
+                {"text": "💳 Подписка", "web_app": {"url": sub_url}},
+                {"text": "📊 Прогресс", "web_app": {"url": progress_url}},
+            ],
+            [{"text": "🛟 Поддержка", "web_app": {"url": settings_url}}],
         ],
         "resize_keyboard": True,
         "is_persistent": True,
