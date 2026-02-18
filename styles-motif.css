@@ -440,6 +440,24 @@ body::after {
   clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
   transition: transform 0.16s ease, box-shadow 0.16s ease, filter 0.16s ease;
   animation: beMoreIdlePulse 2.4s ease-in-out infinite;
+  position: relative;
+  isolation: isolate;
+  overflow: visible;
+}
+
+.ecosystem-btn::before {
+  content: "";
+  position: absolute;
+  inset: -10px;
+  border-radius: 16px;
+  pointer-events: none;
+  z-index: -1;
+  background:
+    radial-gradient(circle at 20% 30%, rgba(49, 224, 255, 0.5), transparent 58%),
+    radial-gradient(circle at 80% 70%, rgba(255, 45, 111, 0.46), transparent 60%);
+  filter: blur(10px);
+  opacity: 0.75;
+  animation: beMoreAuraPulse 2.4s ease-in-out infinite;
 }
 
 .ecosystem-btn__main {
@@ -494,6 +512,18 @@ body::after {
       0 0 30px rgba(49, 224, 255, 0.72),
       0 0 30px rgba(255, 45, 111, 0.58),
       inset 0 0 0 1px rgba(255, 45, 111, 0.36);
+  }
+}
+
+@keyframes beMoreAuraPulse {
+  0%,
+  100% {
+    opacity: 0.62;
+    transform: scale(0.98);
+  }
+  50% {
+    opacity: 0.95;
+    transform: scale(1.02);
   }
 }
 

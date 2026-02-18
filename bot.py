@@ -17,7 +17,7 @@ from telegram import (
 from telegram.ext import Application, CallbackQueryHandler, CommandHandler, ContextTypes, MessageHandler, filters
 
 
-ASSET_VERSION = "20260218e"
+ASSET_VERSION = "20260218f"
 
 TRIBUTE_LINKS = {
     "CORE": {
