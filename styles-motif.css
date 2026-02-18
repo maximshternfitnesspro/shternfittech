@@ -1893,16 +1893,18 @@ body.preview-light_trail .btn {
 }
 
 .onboarding__title--glitch {
-  display: block;
+  display: inline-block;
   white-space: nowrap;
   max-width: 100%;
-  width: 100%;
+  width: auto;
+  justify-self: center;
   text-align: center;
-  font-size: clamp(30px, 6vw, 64px);
-  line-height: 0.95;
-  letter-spacing: 0.045em;
-  padding: 2px 4px;
-  transform: skewX(-9deg);
+  font-size: clamp(24px, 4.2vw, 58px);
+  line-height: 1.02;
+  letter-spacing: 0.03em;
+  padding: 2px 10px 4px;
+  transform: skewX(-5deg);
+  transform-origin: 50% 50%;
   background: linear-gradient(
     182deg,
     var(--logo-yellow-1) 0%,
@@ -3122,9 +3124,11 @@ body.mobile-nav-mode .mobile-tabbar__btn.active .mobile-tabbar__icon {
   }
 
   .onboarding__title--glitch {
-    font-size: clamp(24px, 8vw, 34px);
-    letter-spacing: 0.02em;
-    padding: 5px 6px;
+    font-size: clamp(21px, 7.2vw, 31px);
+    letter-spacing: 0.012em;
+    line-height: 1.04;
+    padding: 4px 2px;
+    transform: none;
   }
 
   .onboarding__sysline {
