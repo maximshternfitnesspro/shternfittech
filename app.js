@@ -436,13 +436,13 @@ function buildShareText() {
   const bossReferenceLevel = clamp(state.currentLevelPassed ? state.level + 1 : state.level, 1, 30);
   if (state.subscription === "DEMO") {
     const left = demoLevelsLeft();
-    const tail = left > 0 ? `До конца демо: ${formatLevelCount(left)}` : "Демо завершено";
-    return `Я в «Чит-код на сушку»: ${progress}. ${tail}. Забирай доступ и проходи уровни вместе со мной.`;
+    const tail = left > 0 ? `Осталось ${formatLevelCount(left)} демо.` : "Демо завершено.";
+    return `Я прохожу «Чит-код на сушку». Сейчас у меня ${progress}. ${tail} Залетай по ссылке и запускай свой уровень 01.`;
   }
 
   const distance = levelsToBoss(bossReferenceLevel);
-  const tail = distance > 0 ? `До босса: ${formatLevelCount(distance)}` : "Босс цикла пройден.";
-  return `Я в «Чит-код на сушку»: ${progress}. ${tail}.`;
+  const tail = distance > 0 ? `До босса ${formatLevelCount(distance)}.` : "Босс цикла пройден.";
+  return `Я в «Чит-код на сушку»: ${progress}. ${tail} Присоединяйся по моей ссылке — будем проходить вместе.`;
 }
 
 function getReferralLink() {
@@ -453,7 +453,7 @@ function getReferralLink() {
 
 async function shareProgress() {
   const shareUrl = getReferralLink();
-  const text = `${buildShareText()} Бонус 1 месяц CORE начисляется, когда друг оплатит по ссылке.`;
+  const text = `${buildShareText()} Реф-бонус: мне начисляется 1 месяц CORE после твоей первой оплаты.`;
   try {
     if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
       await navigator.clipboard.writeText(`${text}\n${shareUrl}`);
@@ -1543,15 +1543,18 @@ function render() {
     progressBoss.textContent = bossDistance > 0 ? bossDistanceText : "Босс цикла пройден";
   }
   if (progressLog) {
-    progressLog.innerHTML = state.completedHistory
+    const items = state.completedHistory
       .slice(-6)
       .reverse()
       .map((entry) => {
-        const label = entry.boss ? "Босс" : "Уровень";
+        const title = entry.boss ? `Босс · уровень ${pad2(entry.level)} пройден` : `Уровень ${pad2(entry.level)} пройден`;
         const reward = entry.boss ? 300 : 120;
-        return `<div class="progress-log__item">${label}<strong>${pad2(entry.level)}</strong>+${reward} чипов</div>`;
+        return `<div class="progress-log__item"><div class="progress-log__title">${title}</div><div class="progress-log__reward">Награда: +${reward} чипов</div></div>`;
       })
       .join("");
+    progressLog.innerHTML =
+      items ||
+      `<div class="progress-log__item"><div class="progress-log__title">Пока нет закрытых уровней</div><div class="progress-log__reward">Пройди миссию, чтобы заполнить ленту прогресса</div></div>`;
   }
   if (progressPaywallBlock) progressPaywallBlock.classList.toggle("hidden", !demoFinished);
   if (refLink) refLink.textContent = getReferralLink();
@@ -2316,7 +2319,7 @@ if (!motifReady) {
         if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
           await navigator.clipboard.writeText(link);
         }
-        if (shopMessage) shopMessage.textContent = "Ссылка скопирована. Месяц CORE начисляется после оплаты друга.";
+        if (shopMessage) shopMessage.textContent = "Ссылка скопирована. Бонус месяца начисляется после первой оплаты друга.";
       } catch {
         if (shopMessage) shopMessage.textContent = "Не удалось скопировать ссылку. Поделись вручную.";
       }
@@ -2326,7 +2329,7 @@ if (!motifReady) {
     dockShareBtn.addEventListener("click", async () => {
       playUiClick("upgrade");
       triggerHaptic("heavy");
-      if (shopMessage) shopMessage.textContent = "Отправляй ссылку другу: бонус месяца после его оплаты.";
+      if (shopMessage) shopMessage.textContent = "Отправляй ссылку другу: бонус месяца после его первой оплаты.";
       await shareProgress();
     });
   }
