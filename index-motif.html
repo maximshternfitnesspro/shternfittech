@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Russo+One&display=swap" rel="stylesheet" />
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link rel="stylesheet" href="styles-motif.css?v=20260215a" />
+    <link rel="stylesheet" href="styles-motif.css?v=20260218a" />
   </head>
   <body>
     <div class="global-overlay" aria-hidden="true"></div>
@@ -48,14 +48,14 @@
           <p class="onboarding__text onboarding__text--lead">Трансформация тела в режиме RPG.</p>
           <div class="onboarding__story">
             <div class="onboarding__story-item">
-              <span class="onboarding__story-icon">🎮</span>
+              <span class="onboarding__story-icon onboarding__story-icon--phone" aria-hidden="true">◈</span>
               <div class="onboarding__story-copy">
                 <div class="onboarding__story-label">В ТЕЛЕФОНЕ</div>
                 <p class="onboarding__story-text">Ты проходишь уровни и побеждаешь боссов.</p>
               </div>
             </div>
             <div class="onboarding__story-item">
-              <span class="onboarding__story-icon">🔋</span>
+              <span class="onboarding__story-icon onboarding__story-icon--life" aria-hidden="true">⚡</span>
               <div class="onboarding__story-copy">
                 <div class="onboarding__story-label">В ЖИЗНИ</div>
                 <p class="onboarding__story-text">Твоя форма улучшается синхронно с игрой.</p>
@@ -63,7 +63,6 @@
             </div>
           </div>
           <div class="onboarding__init">
-            <span>ГОТОВНОСТЬ</span>
             <div class="onboarding__init-track">
               <div class="onboarding__init-fill"></div>
             </div>
@@ -75,7 +74,7 @@
           <h2 class="onboarding__title">Выбери режим</h2>
           <p class="onboarding__text">Перезапуск — мягкий старт без перегруза.</p>
           <div class="option-grid">
-            <button class="option-btn active" data-mode="Перезапуск">Перезапуск</button>
+            <button class="option-btn" data-mode="Перезапуск">Перезапуск</button>
           </div>
         </section>
         <section class="onboarding__screen" data-onboarding-step="3">
@@ -331,13 +330,14 @@
               <div class="referral-card">
                 <div class="referral-card__title">Реферальная программа</div>
                 <div class="referral-card__text">
-                  Пригласи друга в Mini App. После запуска полной реф-системы получишь щедрый бонус за активных друзей.
+                  Пригласи друга и получи 1 месяц CORE бесплатно после его первой успешной оплаты по твоей ссылке.
                 </div>
                 <div class="referral-card__link" id="ref-link">https://t.me/cheatcodewith_bot</div>
                 <div class="cta-row referral-card__actions">
-                  <button class="btn btn--ghost" id="ref-copy-btn">Скопировать ссылку</button>
-                  <button class="btn btn--primary" id="progress-share-btn">Поделиться другу</button>
+                  <button class="btn btn--ghost" id="ref-copy-btn">Скопировать</button>
+                  <button class="btn btn--primary" id="progress-share-btn">Поделиться</button>
                 </div>
+                <div class="referral-card__note">Бонус начисляется только после оплаты друга.</div>
               </div>
               <div class="progress-log" id="progress-log"></div>
               <div class="warning-block hidden" id="progress-paywall-block">
@@ -647,7 +647,7 @@
         <div class="dock__panel">
           <div class="dock__title">Оперативный центр</div>
           <div class="dock-actions">
-            <button class="btn btn--primary" id="dock-share-btn">Пригласить друга</button>
+            <button class="btn btn--primary" id="dock-share-btn">Пригласи друга и получи бесплатный месяц</button>
             <button class="btn btn--ghost" id="dock-support-btn">Нашли ошибку? Сообщить</button>
             <button class="btn btn--ghost be-more-dock-btn" id="dock-ecosystem-btn">
               <span class="be-more-dock-btn__title">BE MORE HUB</span>
@@ -780,7 +780,7 @@
       </button>
       <button class="mobile-tabbar__btn" data-nav="settings" type="button">
         <span class="mobile-tabbar__icon">⚙</span>
-        <span class="mobile-tabbar__label">Опции</span>
+        <span class="mobile-tabbar__label">МЕНЮ</span>
       </button>
     </nav>
 
@@ -801,6 +801,6 @@
       </div>
     </div>
 
-    <script src="app.js?v=20260215a"></script>
+    <script src="app.js?v=20260218a"></script>
   </body>
 </html>

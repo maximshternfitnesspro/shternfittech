@@ -41,7 +41,7 @@ NOTIFY_ON_PAYMENT = os.getenv("MINIAPP_NOTIFY_ON_PAYMENT", "1").strip() not in {
 TRIBUTE_API_KEY = (os.getenv("MINIAPP_TRIBUTE_API_KEY") or "").strip()
 TRIBUTE_WEBHOOK_SIGNATURE_SECRET = (os.getenv("MINIAPP_TRIBUTE_WEBHOOK_SIGNATURE_SECRET") or "").strip()
 ADMIN_TOKEN = (os.getenv("MINIAPP_ADMIN_TOKEN") or "").strip()
-MINIAPP_ASSET_VERSION = (os.getenv("MINIAPP_ASSET_VERSION") or "20260215a").strip()
+MINIAPP_ASSET_VERSION = (os.getenv("MINIAPP_ASSET_VERSION") or "20260218a").strip()
 MINIAPP_PUBLIC_URL = (os.getenv("MINIAPP_WEBAPP_URL") or "").strip().rstrip("/")
 
 # Optional: use Telegram channel/group membership as the source of truth for access.
@@ -136,6 +136,25 @@ def init_db() -> None:
             CREATE TABLE IF NOT EXISTS bot_menu_state (
               tg_user_id TEXT PRIMARY KEY,
               sent_at TEXT NOT NULL
+            )
+            """
+        )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS referrals (
+              invitee_tg_user_id TEXT PRIMARY KEY,
+              referrer_tg_user_id TEXT NOT NULL,
+              created_at TEXT NOT NULL
+            )
+            """
+        )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS referral_rewards (
+              invitee_tg_user_id TEXT PRIMARY KEY,
+              referrer_tg_user_id TEXT NOT NULL,
+              reward_code TEXT NOT NULL,
+              granted_at TEXT NOT NULL
             )
             """
         )
@@ -418,6 +437,75 @@ def get_status(tg_user_id: str) -> dict[str, Any]:
     }
 
 
+def register_referral(invitee_tg_user_id: str, referrer_tg_user_id: str) -> dict[str, Any]:
+    invitee = invitee_tg_user_id.strip()
+    referrer = referrer_tg_user_id.strip()
+    if not invitee or not referrer:
+        return {"ok": False, "reason": "missing_ids"}
+    if invitee == referrer:
+        return {"ok": False, "reason": "self_referral"}
+
+    with db() as conn:
+        existing = conn.execute(
+            "SELECT referrer_tg_user_id FROM referrals WHERE invitee_tg_user_id = ?",
+            (invitee,),
+        ).fetchone()
+        if existing:
+            return {
+                "ok": True,
+                "created": False,
+                "referrer_tg_user_id": existing["referrer_tg_user_id"],
+            }
+        conn.execute(
+            "INSERT INTO referrals (invitee_tg_user_id, referrer_tg_user_id, created_at) VALUES (?, ?, ?)",
+            (invitee, referrer, now_iso()),
+        )
+    return {"ok": True, "created": True, "referrer_tg_user_id": referrer}
+
+
+def get_referrer(invitee_tg_user_id: str) -> str | None:
+    with db() as conn:
+        row = conn.execute(
+            "SELECT referrer_tg_user_id FROM referrals WHERE invitee_tg_user_id = ?",
+            (invitee_tg_user_id.strip(),),
+        ).fetchone()
+    if not row:
+        return None
+    referrer = str(row["referrer_tg_user_id"]).strip()
+    return referrer or None
+
+
+def mark_referral_reward(invitee_tg_user_id: str, referrer_tg_user_id: str, reward_code: str = "FREE_CORE_MONTH") -> bool:
+    with db() as conn:
+        exists = conn.execute(
+            "SELECT invitee_tg_user_id FROM referral_rewards WHERE invitee_tg_user_id = ?",
+            (invitee_tg_user_id.strip(),),
+        ).fetchone()
+        if exists:
+            return False
+        conn.execute(
+            "INSERT INTO referral_rewards (invitee_tg_user_id, referrer_tg_user_id, reward_code, granted_at) VALUES (?, ?, ?, ?)",
+            (invitee_tg_user_id.strip(), referrer_tg_user_id.strip(), reward_code, now_iso()),
+        )
+    return True
+
+
+def get_referral_stats(referrer_tg_user_id: str) -> dict[str, int]:
+    with db() as conn:
+        invited = conn.execute(
+            "SELECT COUNT(*) AS c FROM referrals WHERE referrer_tg_user_id = ?",
+            (referrer_tg_user_id.strip(),),
+        ).fetchone()
+        rewarded = conn.execute(
+            "SELECT COUNT(*) AS c FROM referral_rewards WHERE referrer_tg_user_id = ?",
+            (referrer_tg_user_id.strip(),),
+        ).fetchone()
+    return {
+        "invited_total": int((invited or {"c": 0})["c"]),
+        "paid_total": int((rewarded or {"c": 0})["c"]),
+    }
+
+
 def upsert_pending(tg_user_id: str, tier: str) -> None:
     tier = normalize_tier(tier) or "DEMO"
     ts = now_iso()
@@ -477,6 +565,47 @@ def upsert_paid(tg_user_id: str, paid_tier: str, payload: Any) -> dict[str, str]
         )
 
     return {"tier_before": current, "tier_after": final_tier}
+
+
+def maybe_process_referral_reward(invitee_tg_user_id: str, transition: dict[str, str], request: Request) -> dict[str, Any]:
+    tier_before = normalize_tier(transition.get("tier_before")) or "DEMO"
+    tier_after = normalize_tier(transition.get("tier_after")) or "DEMO"
+
+    if TIER_ORDER.get(tier_before, 0) >= TIER_ORDER["CORE"]:
+        return {"eligible": False, "reason": "already_paid_before"}
+    if TIER_ORDER.get(tier_after, 0) < TIER_ORDER["CORE"]:
+        return {"eligible": False, "reason": "not_paid_tier"}
+
+    referrer = get_referrer(invitee_tg_user_id)
+    if not referrer:
+        return {"eligible": False, "reason": "no_referrer"}
+    if referrer == invitee_tg_user_id:
+        return {"eligible": False, "reason": "self_referrer"}
+
+    created = mark_referral_reward(invitee_tg_user_id, referrer)
+    if not created:
+        return {"eligible": True, "reward_created": False, "reason": "already_rewarded", "referrer_tg_user_id": referrer}
+
+    # NOTE: We mark reward automatically, but actual "free month" activation is fulfilled manually/support-side.
+    # This keeps payment flow stable and avoids accidental access downgrade conflicts.
+    support_url = f"https://t.me/{'bemoresupport'}"
+    send_telegram_message(
+        referrer,
+        (
+            "Реферальный бонус зачислен.\n\n"
+            "Друг оплатил тариф по твоей ссылке — тебе доступен 1 бесплатный месяц CORE.\n"
+            "Нажми «Активировать бонус» и напиши в поддержку."
+        ),
+        reply_markup={
+            "inline_keyboard": [[{"text": "Активировать бонус", "url": support_url}]],
+        },
+    )
+    send_telegram_message(
+        invitee_tg_user_id,
+        "Оплата подтверждена. Бонус рефереру начислен автоматически.",
+        reply_markup=build_bot_menu_markup(request),
+    )
+    return {"eligible": True, "reward_created": True, "referrer_tg_user_id": referrer}
 
 
 def remember_event(payload: Any) -> tuple[str, bool]:
@@ -726,6 +855,44 @@ async def bot_menu(request: Request) -> dict[str, Any]:
     return {"ok": bool(ok)}
 
 
+@app.post("/api/referral/register")
+async def referral_register(request: Request, token: str | None = None) -> dict[str, Any]:
+    """
+    Registers invitee->referrer relation once.
+    Accepts either verified initData context or admin token for server-to-server calls (bot backend).
+    """
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+
+    raw_invitee = str((body or {}).get("tg_user_id", "")).strip()
+    raw_referrer = str((body or {}).get("referrer_tg_user_id", "")).strip()
+    if not raw_referrer:
+        raise HTTPException(status_code=400, detail="referrer_tg_user_id required")
+
+    admin_allowed = bool(ADMIN_TOKEN and token == ADMIN_TOKEN)
+    if admin_allowed:
+        invitee = raw_invitee
+        if not invitee:
+            raise HTTPException(status_code=400, detail="tg_user_id required for admin mode")
+    else:
+        invitee, verified = resolve_tg_user_id(request, raw_invitee or None)
+        if not verified:
+            raise HTTPException(status_code=403, detail="forbidden")
+
+    result = register_referral(invitee, raw_referrer)
+    if not result.get("ok"):
+        raise HTTPException(status_code=400, detail=result.get("reason") or "invalid_referral")
+    return {"ok": True, "invitee_tg_user_id": invitee, **result}
+
+
+@app.get("/api/referral/status")
+def referral_status(tg_user_id: str = Query(..., min_length=1, max_length=64)) -> dict[str, Any]:
+    stats = get_referral_stats(tg_user_id)
+    return {"ok": True, "tg_user_id": tg_user_id.strip(), **stats}
+
+
 @app.post("/api/tribute/webhook")
 async def tribute_webhook(request: Request, token: str | None = None) -> JSONResponse:
     token_norm = token.strip() if isinstance(token, str) else token
@@ -808,6 +975,7 @@ async def tribute_webhook(request: Request, token: str | None = None) -> JSONRes
 
     transition = upsert_paid(tg_user_id, tier, merged_payload)
     tier_after = transition.get("tier_after", tier)
+    referral_reward = maybe_process_referral_reward(tg_user_id, transition, request)
     logger.info(
         "tribute_webhook accepted=true tg_user_id=%s tier=%s event_key=%s path=%s",
         tg_user_id,
@@ -832,6 +1000,7 @@ async def tribute_webhook(request: Request, token: str | None = None) -> JSONRes
             "event_key": event_key,
             "tg_user_id": tg_user_id,
             "tier_detected": tier,
+            "referral_reward": referral_reward,
             **transition,
             "status": get_status(tg_user_id),
         }

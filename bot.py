@@ -17,7 +17,7 @@ from telegram import (
 from telegram.ext import Application, CallbackQueryHandler, CommandHandler, ContextTypes, MessageHandler, filters
 
 
-ASSET_VERSION = "20260215a"
+ASSET_VERSION = "20260218a"
 
 TRIBUTE_LINKS = {
     "CORE": {
@@ -40,12 +40,14 @@ class Settings:
     token: str
     miniapp_url: str
     backend_url: str
+    admin_token: str
 
 
 def load_settings() -> Settings:
     token = os.getenv("MINIAPP_BOT_TOKEN", "").strip()
     miniapp_url = os.getenv("MINIAPP_WEBAPP_URL", "").strip().rstrip("/")
     backend_url = os.getenv("MINIAPP_BACKEND_URL", "").strip().rstrip("/")
+    admin_token = os.getenv("MINIAPP_ADMIN_TOKEN", "").strip()
 
     if not token:
         raise RuntimeError("MINIAPP_BOT_TOKEN is required")
@@ -54,7 +56,7 @@ def load_settings() -> Settings:
     if not backend_url:
         backend_url = miniapp_url
 
-    return Settings(token=token, miniapp_url=miniapp_url, backend_url=backend_url)
+    return Settings(token=token, miniapp_url=miniapp_url, backend_url=backend_url, admin_token=admin_token)
 
 
 SETTINGS = load_settings()
@@ -123,11 +125,60 @@ def support_text() -> str:
     )
 
 
+def extract_referrer_id(start_arg: str | None) -> str:
+    text = (start_arg or "").strip().lower()
+    if not text:
+        return ""
+    if text.startswith("ref_"):
+        candidate = text.split("ref_", 1)[1]
+        return candidate if candidate.isdigit() else ""
+    return ""
+
+
+def register_referral_remote(invitee_tg_user_id: int, referrer_tg_user_id: str) -> bool:
+    if not referrer_tg_user_id or not SETTINGS.admin_token:
+        return False
+    query = urllib.parse.urlencode({"token": SETTINGS.admin_token})
+    url = f"{SETTINGS.backend_url}/api/referral/register?{query}"
+    payload = json.dumps(
+        {
+            "tg_user_id": str(invitee_tg_user_id),
+            "referrer_tg_user_id": str(referrer_tg_user_id),
+        },
+        ensure_ascii=False,
+    ).encode("utf-8")
+    request = urllib.request.Request(
+        url=url,
+        method="POST",
+        headers={"Content-Type": "application/json"},
+        data=payload,
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=6) as response:
+            body = json.loads(response.read().decode("utf-8"))
+    except (urllib.error.URLError, TimeoutError, json.JSONDecodeError):
+        return False
+    return bool(body.get("ok"))
+
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    if not update.message:
+    if not update.message or not update.effective_user:
         return
+    start_arg = context.args[0] if context.args else ""
+    referrer_id = extract_referrer_id(start_arg)
+    referral_registered = False
+    if referrer_id and referrer_id != str(update.effective_user.id):
+        referral_registered = register_referral_remote(update.effective_user.id, referrer_id)
+
+    referral_tail = (
+        "\n\n🎁 Реферальная связь сохранена.\n"
+        "Друг получит бонус месяца, когда ты оплатишь любой тариф."
+        if referral_registered
+        else ""
+    )
     await update.message.reply_text(
-        "⚡ Чит-код на сушку активирован.\nОткрой Mini App и проходи 1 уровень в день.",
+        "⚡ Чит-код на сушку активирован.\nОткрой Mini App и проходи 1 уровень в день."
+        f"{referral_tail}",
         reply_markup=build_bottom_keyboard(),
     )
 

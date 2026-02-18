@@ -6,7 +6,7 @@ const LEVEL_UNLOCK_HOUR = 7;
 const LEVEL_UNLOCK_TZ_LABEL = "МСК";
 const MOSCOW_OFFSET_MS = 3 * 60 * 60 * 1000;
 const PAYMENT_STATUS_POLL_MS = 15000;
-const ONBOARDING_VERSION = 5;
+const ONBOARDING_VERSION = 6;
 const DEMO_LEVEL_CAP = 3;
 const ALWAYS_SHOW_ONBOARDING = true;
 const TIER_RANK = { DEMO: 0, CORE: 1, BOOST: 2, ELITE: 3 };
@@ -293,6 +293,8 @@ let backendReachable = true;
 let statusRequestInFlight = false;
 let tourActive = false;
 let tourIndex = 0;
+let progressRingValue = 0;
+let progressRingAnimationFrame = null;
 
 const TOUR_STEPS = [
   {
@@ -313,7 +315,7 @@ const TOUR_STEPS = [
       state.homeDetailsOpen = true;
       setActiveScreen("home");
     },
-    target: () => sideQuestBtn || sideQuestPanel,
+    target: () => sideQuestPanel || sideQuestBtn,
   },
   {
     title: "Подписка",
@@ -435,7 +437,7 @@ function buildShareText() {
   if (state.subscription === "DEMO") {
     const left = demoLevelsLeft();
     const tail = left > 0 ? `До конца демо: ${formatLevelCount(left)}` : "Демо завершено";
-    return `Я в «Чит-код на сушку»: ${progress}. ${tail}. Присоединяйся в команду.`;
+    return `Я в «Чит-код на сушку»: ${progress}. ${tail}. Забирай доступ и проходи уровни вместе со мной.`;
   }
 
   const distance = levelsToBoss(bossReferenceLevel);
@@ -451,7 +453,7 @@ function getReferralLink() {
 
 async function shareProgress() {
   const shareUrl = getReferralLink();
-  const text = buildShareText();
+  const text = `${buildShareText()} Бонус 1 месяц CORE начисляется, когда друг оплатит по ссылке.`;
   try {
     if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
       await navigator.clipboard.writeText(`${text}\n${shareUrl}`);
@@ -1271,6 +1273,57 @@ function updateMissionProgressUI() {
   missionWatchFill.style.width = `${Math.round(progress * 100)}%`;
 }
 
+function pressButtonFx(button) {
+  if (!button) return;
+  button.classList.add("is-pressed");
+  setTimeout(() => button.classList.remove("is-pressed"), 160);
+}
+
+function getActiveScreenName() {
+  const activeScreen = document.querySelector(".screen.active");
+  return activeScreen ? activeScreen.dataset.screen : "home";
+}
+
+function progressTargetValue() {
+  if (state.subscription === "DEMO") {
+    return clamp(completedDemoLevels() / DEMO_LEVEL_CAP, 0, 1);
+  }
+  return clamp(completedLevelsCount() / 30, 0, 1);
+}
+
+function setProgressRingValue(value) {
+  if (!progressRing) return;
+  progressRingValue = clamp(Number(value) || 0, 0, 1);
+  progressRing.style.setProperty("--value", String(progressRingValue));
+}
+
+function animateProgressRingTo(targetValue, { reset = false } = {}) {
+  if (!progressRing) return;
+  const target = clamp(Number(targetValue) || 0, 0, 1);
+  if (!reset && Math.abs(target - progressRingValue) < 0.001) return;
+  if (progressRingAnimationFrame) cancelAnimationFrame(progressRingAnimationFrame);
+
+  const startValue = reset ? 0 : progressRingValue;
+  setProgressRingValue(startValue);
+  const startTime = performance.now();
+  const duration = 920;
+  const easeOut = (t) => 1 - Math.pow(1 - t, 3);
+
+  const tick = (timestamp) => {
+    const progress = clamp((timestamp - startTime) / duration, 0, 1);
+    const value = startValue + (target - startValue) * easeOut(progress);
+    setProgressRingValue(value);
+    if (progress < 1) {
+      progressRingAnimationFrame = requestAnimationFrame(tick);
+      return;
+    }
+    progressRingAnimationFrame = null;
+    setProgressRingValue(target);
+  };
+
+  progressRingAnimationFrame = requestAnimationFrame(tick);
+}
+
 function setActiveScreen(name) {
   if (name !== "mission" && missionInterval) {
     stopMissionTimer();
@@ -1287,6 +1340,9 @@ function setActiveScreen(name) {
   navButtons.forEach((button) => {
     button.classList.toggle("active", button.dataset.nav === name);
   });
+  if (name === "progress") {
+    animateProgressRingTo(progressTargetValue(), { reset: true });
+  }
 }
 
 function render() {
@@ -1467,12 +1523,16 @@ function render() {
     }
   }
 
+  const progressValue = progressTargetValue();
   if (state.subscription === "DEMO") {
     progressLevel.textContent = `${completedDemoLevels()}/${DEMO_LEVEL_CAP}`;
-    progressRing.style.setProperty("--value", String(completedDemoLevels() / DEMO_LEVEL_CAP));
   } else {
     progressLevel.textContent = `${completedLevels}/30`;
-    progressRing.style.setProperty("--value", String(completedLevels / 30));
+  }
+  if (getActiveScreenName() === "progress") {
+    animateProgressRingTo(progressValue, { reset: false });
+  } else {
+    setProgressRingValue(progressValue);
   }
   progressSyncSeries.textContent = `Синхронизация: ${state.syncSeries}`;
   progressChips.textContent = String(state.chips);
@@ -2052,7 +2112,17 @@ function showOnboardingStep(step) {
   onboardingBack.classList.toggle("hidden", onboardingStep === 1);
   onboardingNext.classList.toggle("hidden", onboardingStep === 3);
   onboardingFinish.classList.toggle("hidden", onboardingStep !== 3);
-  onboardingNext.textContent = onboardingStep === 1 ? "Начать игру" : "Дальше";
+  const modeSelected = Array.from(modeButtons).some((button) => button.classList.contains("active"));
+  if (onboardingStep === 1) {
+    onboardingNext.disabled = false;
+    onboardingNext.textContent = "Начать игру";
+  } else if (onboardingStep === 2) {
+    onboardingNext.disabled = !modeSelected;
+    onboardingNext.textContent = modeSelected ? "Дальше" : "Выбери режим";
+  } else {
+    onboardingNext.disabled = false;
+    onboardingNext.textContent = "Дальше";
+  }
   onboardingNext.classList.toggle("onboarding-next--launch", onboardingStep === 1);
   if (onboardingActions) onboardingActions.classList.toggle("is-launch", onboardingStep === 1);
 }
@@ -2246,7 +2316,7 @@ if (!motifReady) {
         if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
           await navigator.clipboard.writeText(link);
         }
-        if (shopMessage) shopMessage.textContent = "Реферальная ссылка скопирована.";
+        if (shopMessage) shopMessage.textContent = "Ссылка скопирована. Месяц CORE начисляется после оплаты друга.";
       } catch {
         if (shopMessage) shopMessage.textContent = "Не удалось скопировать ссылку. Поделись вручную.";
       }
@@ -2256,6 +2326,7 @@ if (!motifReady) {
     dockShareBtn.addEventListener("click", async () => {
       playUiClick("upgrade");
       triggerHaptic("heavy");
+      if (shopMessage) shopMessage.textContent = "Отправляй ссылку другу: бонус месяца после его оплаты.";
       await shareProgress();
     });
   }
@@ -2318,6 +2389,7 @@ if (!motifReady) {
     ecosystemBtn.addEventListener("click", () => {
       playUiClick("upgrade");
       triggerHaptic("heavy");
+      pressButtonFx(ecosystemBtn);
       openEcosystemModal();
     });
   }
@@ -2325,6 +2397,7 @@ if (!motifReady) {
     dockEcosystemBtn.addEventListener("click", () => {
       playUiClick("upgrade");
       triggerHaptic("heavy");
+      pressButtonFx(dockEcosystemBtn);
       openEcosystemModal();
     });
   }
@@ -2531,6 +2604,10 @@ if (!motifReady) {
     showOnboardingStep(onboardingStep - 1);
   });
   onboardingNext.addEventListener("click", () => {
+    if (onboardingNext.disabled) {
+      triggerHaptic("error");
+      return;
+    }
     triggerHaptic("heavy");
     if (onboardingStep === 1) {
       // Autoplay restrictions: we can only start audio after a user gesture.
@@ -2558,6 +2635,9 @@ if (!motifReady) {
       state.mode = button.dataset.mode;
       saveState();
       render();
+      if (onboardingStep === 2 && onboarding && !onboarding.classList.contains("hidden")) {
+        showOnboardingStep(2);
+      }
     });
   });
 
