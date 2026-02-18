@@ -17,20 +17,20 @@ from telegram import (
 from telegram.ext import Application, CallbackQueryHandler, CommandHandler, ContextTypes, MessageHandler, filters
 
 
-ASSET_VERSION = "20260218a"
+ASSET_VERSION = "20260218c"
 
 TRIBUTE_LINKS = {
     "CORE": {
-        "telegram": "https://t.me/tribute/app?startapp=sNQO",
-        "web": "https://web.tribute.tg/s/NQO",
+        "telegram": "https://web.tribute.tg/shop/pay/3c5b4c19-f50a-4a4f-81e1-2e74fe4677dd",
+        "web": "https://web.tribute.tg/shop/pay/3c5b4c19-f50a-4a4f-81e1-2e74fe4677dd",
     },
     "BOOST": {
-        "telegram": "https://t.me/tribute/app?startapp=sNQP",
-        "web": "https://web.tribute.tg/s/NQP",
+        "telegram": "https://web.tribute.tg/shop/pay/79274360-faab-4c87-9e1d-64aabe4de65e",
+        "web": "https://web.tribute.tg/shop/pay/79274360-faab-4c87-9e1d-64aabe4de65e",
     },
     "ELITE": {
-        "telegram": "https://t.me/tribute/app?startapp=sNQQ",
-        "web": "https://web.tribute.tg/s/NQQ",
+        "telegram": "https://web.tribute.tg/shop/pay/9f5939e0-1153-4e1e-99dc-d311b5ff8029",
+        "web": "https://web.tribute.tg/shop/pay/9f5939e0-1153-4e1e-99dc-d311b5ff8029",
     },
 }
 

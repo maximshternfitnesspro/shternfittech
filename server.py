@@ -30,9 +30,9 @@ TIER_HINTS = {
 }
 
 TRIBUTE_LINKS = {
-    "CORE": "https://t.me/tribute/app?startapp=sNQO",
-    "BOOST": "https://t.me/tribute/app?startapp=sNQP",
-    "ELITE": "https://t.me/tribute/app?startapp=sNQQ",
+    "CORE": "https://web.tribute.tg/shop/pay/3c5b4c19-f50a-4a4f-81e1-2e74fe4677dd",
+    "BOOST": "https://web.tribute.tg/shop/pay/79274360-faab-4c87-9e1d-64aabe4de65e",
+    "ELITE": "https://web.tribute.tg/shop/pay/9f5939e0-1153-4e1e-99dc-d311b5ff8029",
 }
 
 WEBHOOK_TOKEN = os.getenv("MINIAPP_TRIBUTE_WEBHOOK_TOKEN", "")
@@ -41,7 +41,7 @@ NOTIFY_ON_PAYMENT = os.getenv("MINIAPP_NOTIFY_ON_PAYMENT", "1").strip() not in {
 TRIBUTE_API_KEY = (os.getenv("MINIAPP_TRIBUTE_API_KEY") or "").strip()
 TRIBUTE_WEBHOOK_SIGNATURE_SECRET = (os.getenv("MINIAPP_TRIBUTE_WEBHOOK_SIGNATURE_SECRET") or "").strip()
 ADMIN_TOKEN = (os.getenv("MINIAPP_ADMIN_TOKEN") or "").strip()
-MINIAPP_ASSET_VERSION = (os.getenv("MINIAPP_ASSET_VERSION") or "20260218a").strip()
+MINIAPP_ASSET_VERSION = (os.getenv("MINIAPP_ASSET_VERSION") or "20260218c").strip()
 MINIAPP_PUBLIC_URL = (os.getenv("MINIAPP_WEBAPP_URL") or "").strip().rstrip("/")
 
 # Optional: use Telegram channel/group membership as the source of truth for access.
