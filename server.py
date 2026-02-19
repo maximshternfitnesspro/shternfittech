@@ -30,9 +30,15 @@ TIER_HINTS = {
 }
 
 TRIBUTE_LINKS = {
-    "CORE": "https://web.tribute.tg/shop/pay/3c5b4c19-f50a-4a4f-81e1-2e74fe4677dd",
-    "BOOST": "https://web.tribute.tg/shop/pay/79274360-faab-4c87-9e1d-64aabe4de65e",
-    "ELITE": "https://web.tribute.tg/shop/pay/9f5939e0-1153-4e1e-99dc-d311b5ff8029",
+    "CORE": (os.getenv("MINIAPP_TRIBUTE_CORE_URL") or "https://web.tribute.tg/shop/pay/3c5b4c19-f50a-4a4f-81e1-2e74fe4677dd").strip(),
+    "BOOST": (os.getenv("MINIAPP_TRIBUTE_BOOST_URL") or "https://web.tribute.tg/shop/pay/79274360-faab-4c87-9e1d-64aabe4de65e").strip(),
+    "ELITE": (os.getenv("MINIAPP_TRIBUTE_ELITE_URL") or "https://web.tribute.tg/shop/pay/9f5939e0-1153-4e1e-99dc-d311b5ff8029").strip(),
+}
+
+TRIBUTE_REF_LINKS = {
+    "CORE": (os.getenv("MINIAPP_TRIBUTE_CORE_REF_URL") or TRIBUTE_LINKS["CORE"]).strip(),
+    "BOOST": (os.getenv("MINIAPP_TRIBUTE_BOOST_REF_URL") or TRIBUTE_LINKS["BOOST"]).strip(),
+    "ELITE": (os.getenv("MINIAPP_TRIBUTE_ELITE_REF_URL") or TRIBUTE_LINKS["ELITE"]).strip(),
 }
 
 WEBHOOK_TOKEN = os.getenv("MINIAPP_TRIBUTE_WEBHOOK_TOKEN", "")
@@ -475,6 +481,20 @@ def get_referrer(invitee_tg_user_id: str) -> str | None:
     return referrer or None
 
 
+def has_referrer(invitee_tg_user_id: str) -> bool:
+    return bool(get_referrer(invitee_tg_user_id))
+
+
+def payment_link_for_tier(tier: str, invitee_tg_user_id: str | None = None) -> tuple[str, bool]:
+    normalized = normalize_tier(tier) or "CORE"
+    referral_active = bool(invitee_tg_user_id and has_referrer(invitee_tg_user_id))
+    if referral_active:
+        ref_link = (TRIBUTE_REF_LINKS.get(normalized) or "").strip()
+        if ref_link:
+            return ref_link, True
+    return (TRIBUTE_LINKS.get(normalized) or "").strip(), False
+
+
 def mark_referral_reward(invitee_tg_user_id: str, referrer_tg_user_id: str, reward_code: str = "FREE_CORE_MONTH") -> bool:
     with db() as conn:
         exists = conn.execute(
@@ -815,15 +835,18 @@ async def access_pending(request: Request) -> dict[str, Any]:
 
     # Payment assistant: drop a one-tap button into the bot chat so users don't get lost.
     # Avoid spamming the same button repeatedly.
-    if verified and tier in TRIBUTE_LINKS and (pending_before != tier or resend):
+    payment_url, referral_active = payment_link_for_tier(tier, tg_user_id)
+    if verified and payment_url and (pending_before != tier or resend):
+        discount_note = " По реф-ссылке действует скидка 25%." if referral_active else ""
         send_telegram_message(
             tg_user_id,
             (
                 f"Открыта оплата {tier}.\n\n"
                 "Нажми кнопку ниже. После оплаты вернись в Mini App — доступ обновится автоматически."
+                f"{discount_note}"
             ),
             reply_markup={
-                "inline_keyboard": [[{"text": f"Оплатить {tier}", "url": TRIBUTE_LINKS[tier]}]],
+                "inline_keyboard": [[{"text": f"Оплатить {tier}", "url": payment_url}]],
             },
         )
 
@@ -891,6 +914,28 @@ async def referral_register(request: Request, token: str | None = None) -> dict[
 def referral_status(tg_user_id: str = Query(..., min_length=1, max_length=64)) -> dict[str, Any]:
     stats = get_referral_stats(tg_user_id)
     return {"ok": True, "tg_user_id": tg_user_id.strip(), **stats}
+
+
+@app.get("/api/payments/link")
+def payment_link(
+    request: Request,
+    tier: str = Query(..., min_length=3, max_length=16),
+    tg_user_id: str | None = Query(None, min_length=1, max_length=64),
+) -> dict[str, Any]:
+    normalized = normalize_tier(tier)
+    if not normalized:
+        raise HTTPException(status_code=400, detail="invalid tier")
+    resolved_id, _verified = resolve_tg_user_id(request, tg_user_id)
+    url, referral_active = payment_link_for_tier(normalized, resolved_id)
+    if not url:
+        raise HTTPException(status_code=404, detail="payment link not configured")
+    return {
+        "ok": True,
+        "tier": normalized,
+        "url": url,
+        "discount_percent": 25 if referral_active else 0,
+        "source": "referral" if referral_active else "default",
+    }
 
 
 @app.post("/api/tribute/webhook")

@@ -53,6 +53,7 @@ const DEFAULT_STATE = {
   currentLevelPassed: false,
   nextUnlockAt: null,
   subscriptionStartedAt: null,
+  referralDiscountPercent: 0,
   pendingUpgrade: null,
   quick: {
     hydrationMl: 1200,
@@ -191,6 +192,9 @@ const progressPaywallBtn = document.getElementById("progress-paywall-btn");
 const progressShareBtn = document.getElementById("progress-share-btn");
 const refLink = document.getElementById("ref-link");
 const refCopyBtn = document.getElementById("ref-copy-btn");
+const referralCopyMain = document.getElementById("referral-copy-main");
+const referralCopyNote = document.getElementById("referral-copy-note");
+const subscriptionRefNote = document.getElementById("subscription-ref-note");
 
 const resultMainReward = document.getElementById("result-main-reward");
 const resultBonusReward = document.getElementById("result-bonus-reward");
@@ -464,6 +468,38 @@ function pickPaymentLinkByTier(tier) {
     return entry.telegram || entry.web || "";
   }
   return entry.web || entry.telegram || "";
+}
+
+async function resolvePaymentLinkByTier(tier) {
+  const fallbackUrl = pickPaymentLinkByTier(tier);
+  if (!["CORE", "BOOST", "ELITE"].includes(tier)) return { url: fallbackUrl, discountPercent: 0, source: "default" };
+
+  const tgUserId = getTelegramUserId();
+  const initData = getTelegramInitData();
+  const query = tgUserId ? `?tier=${encodeURIComponent(tier)}&tg_user_id=${encodeURIComponent(tgUserId)}` : `?tier=${encodeURIComponent(tier)}`;
+  const headers = initData ? { "X-Tg-Init-Data": initData } : {};
+
+  try {
+    const response = await fetch(`/api/payments/link${query}`, { method: "GET", headers });
+    if (!response.ok) throw new Error(`http_${response.status}`);
+    const payload = await response.json();
+    const url = payload && typeof payload.url === "string" ? payload.url : fallbackUrl;
+    const discountPercent = Number(payload?.discount_percent) || 0;
+    const source = String(payload?.source || "default");
+    return { url: url || fallbackUrl, discountPercent, source };
+  } catch {
+    return { url: fallbackUrl, discountPercent: 0, source: "default" };
+  }
+}
+
+async function syncReferralDiscountState() {
+  const payment = await resolvePaymentLinkByTier("CORE");
+  const discount = Number(payment.discountPercent) || 0;
+  if (discount <= 0) return;
+  if (discount === Number(state.referralDiscountPercent || 0)) return;
+  state.referralDiscountPercent = discount;
+  saveState();
+  render();
 }
 
 function normalizeTier(value) {
@@ -1380,6 +1416,22 @@ function render() {
       subscriptionHeadline.innerHTML = `<span class="sub-highlight">ТЕКУЩИЙ УРОВЕНЬ</span>: ${tierLabel(state.subscription)}. <span class="sub-highlight">МОДУЛЬ ТРЕНИРОВОК</span>: ${state.mode.toUpperCase()}.`;
     }
   }
+  const referralDiscount = Number(state.referralDiscountPercent) || 0;
+  if (subscriptionRefNote) {
+    subscriptionRefNote.textContent = referralDiscount > 0
+      ? `РЕФ-СКИДКА АКТИВНА: ${referralDiscount}% на первый платёж.`
+      : "РЕФ-СКИДКА: 25% на первый платёж по приглашению.";
+  }
+  if (referralCopyMain) {
+    referralCopyMain.textContent = referralDiscount > 0
+      ? `Твоя ссылка даёт другу скидку ${referralDiscount}% на первый платёж. После его оплаты тебе начисляется 1 месяц CORE.`
+      : "Друг получает скидку 25% на первый платёж по твоей ссылке. Ты получаешь 1 месяц CORE после его первой успешной оплаты.";
+  }
+  if (referralCopyNote) {
+    referralCopyNote.textContent = referralDiscount > 0
+      ? `Скидка ${referralDiscount}% уже активна для приглашённого. Бонус месяца — после первой оплаты друга.`
+      : "Скидка 25% действует для приглашённого. Бонус месяца — после первой оплаты друга.";
+  }
   if (sidebarUpgradeBenefits) sidebarUpgradeBenefits.textContent = nextTierBenefits(state.subscription);
   if (sidebarSubscriptionTerm) {
     if (subscriptionInfo.demo) {
@@ -1764,13 +1816,20 @@ async function upgradeSubscription(target) {
     backendReachable = false;
   }
 
-  const paymentLink = pickPaymentLinkByTier(target);
-  if (paymentLink) openExternalLink(paymentLink);
+  const payment = await resolvePaymentLinkByTier(target);
+  state.referralDiscountPercent = Number(payment.discountPercent) || 0;
+  saveState();
+  render();
+  if (payment.url) openExternalLink(payment.url);
 
   setActiveScreen("subscription");
   closeDemoPaywall();
   if (shopMessage) {
-    shopMessage.textContent = `Оплата ${target} открыта в Tribute. По реф-ссылке действует скидка 25%. После оплаты нажми «Проверить оплату».`;
+    if (state.referralDiscountPercent > 0) {
+      shopMessage.textContent = `Оплата ${target} открыта в Tribute. Скидка ${state.referralDiscountPercent}% активна. После оплаты нажми «Проверить оплату».`;
+    } else {
+      shopMessage.textContent = `Оплата ${target} открыта в Tribute. После оплаты нажми «Проверить оплату».`;
+    }
   }
 }
 
@@ -2675,7 +2734,8 @@ if (!motifReady) {
     if (STARTUP_SCREEN && onboarding && onboarding.classList.contains("hidden")) {
       setActiveScreen(STARTUP_SCREEN);
     }
+    await syncReferralDiscountState();
     startAccessPolling();
-    checkAccessStatus({ manual: false, refresh: true });
+    await checkAccessStatus({ manual: false, refresh: true });
   })();
 }

@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Russo+One&display=swap" rel="stylesheet" />
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link rel="stylesheet" href="styles-motif.css?v=20260219a" />
+    <link rel="stylesheet" href="styles-motif.css?v=20260219c" />
   </head>
   <body>
     <div class="global-overlay" aria-hidden="true"></div>
@@ -329,7 +329,7 @@
               </div>
               <div class="referral-card">
                 <div class="referral-card__title">Реферальная программа</div>
-                <div class="referral-card__text">
+                <div class="referral-card__text" id="referral-copy-main">
                   Друг получает скидку 25% на первый платёж по твоей ссылке. Ты получаешь 1 месяц CORE после его первой
                   успешной оплаты.
                 </div>
@@ -338,7 +338,7 @@
                   <button class="btn btn--ghost" id="ref-copy-btn">Скопировать</button>
                   <button class="btn btn--primary" id="progress-share-btn">Поделиться</button>
                 </div>
-                <div class="referral-card__note">Скидка 25% действует для приглашённого. Бонус месяца — после первой оплаты друга.</div>
+                <div class="referral-card__note" id="referral-copy-note">Скидка 25% действует для приглашённого. Бонус месяца — после первой оплаты друга.</div>
               </div>
               <div class="progress-log" id="progress-log"></div>
               <div class="warning-block hidden" id="progress-paywall-block">
@@ -482,7 +482,7 @@
                 <span class="sub-highlight">ТЕКУЩИЙ УРОВЕНЬ</span>: CORE.
                 <span class="sub-highlight">МОДУЛЬ ТРЕНИРОВОК</span>: ПЕРЕЗАПУСК.
               </div>
-              <div class="metric__label">РЕФ-СКИДКА: 25% на первый платёж по приглашению.</div>
+              <div class="metric__label" id="subscription-ref-note">РЕФ-СКИДКА: 25% на первый платёж по приглашению.</div>
               <div class="pending-upgrade hidden" id="subscription-pending">
                 <div class="pending-upgrade__title">Ожидается оплата</div>
                 <div class="pending-upgrade__text" id="subscription-pending-text">
@@ -803,6 +803,6 @@
       </div>
     </div>
 
-    <script src="app.js?v=20260219a"></script>
+    <script src="app.js?v=20260219c"></script>
   </body>
 </html>
