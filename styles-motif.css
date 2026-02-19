@@ -422,10 +422,10 @@ body::after {
 
 .ecosystem-btn {
   border: 2px solid rgba(49, 224, 255, 0.98);
-  border-radius: 12px;
+  border-radius: 14px;
   background:
-    radial-gradient(circle at 20% 35%, rgba(49, 224, 255, 0.2), transparent 58%),
-    radial-gradient(circle at 82% 70%, rgba(255, 45, 111, 0.22), transparent 60%),
+    radial-gradient(circle at 18% 30%, rgba(49, 224, 255, 0.22), transparent 56%),
+    radial-gradient(circle at 82% 74%, rgba(255, 45, 111, 0.24), transparent 60%),
     linear-gradient(150deg, rgba(20, 6, 12, 0.98), rgba(10, 8, 18, 0.97));
   min-height: 56px;
   min-width: 162px;
@@ -437,43 +437,44 @@ body::after {
   gap: 1px;
   box-shadow:
     0 0 0 1px rgba(255, 45, 111, 0.9),
-    0 0 22px rgba(49, 224, 255, 0.92),
-    0 0 26px rgba(255, 45, 111, 0.78),
-    inset 0 0 0 1px rgba(49, 224, 255, 0.5),
-    inset 0 0 28px rgba(49, 224, 255, 0.3);
-  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+    0 0 26px rgba(49, 224, 255, 0.96),
+    0 0 24px rgba(255, 45, 111, 0.8),
+    inset 0 0 0 1px rgba(49, 224, 255, 0.46),
+    inset 0 0 28px rgba(49, 224, 255, 0.28);
   transition: transform 0.16s ease, box-shadow 0.16s ease, filter 0.16s ease;
-  animation: beMoreIdlePulse 1.8s ease-in-out infinite;
+  animation: beMoreCorePulse 2.2s ease-in-out infinite;
   position: relative;
   isolation: isolate;
   overflow: hidden;
   z-index: 2;
-  filter: drop-shadow(0 0 8px rgba(49, 224, 255, 0.78)) drop-shadow(0 0 10px rgba(255, 45, 111, 0.52));
+  -webkit-tap-highlight-color: transparent;
 }
 
 .ecosystem-btn::before {
   content: "";
   position: absolute;
   inset: 0;
-  border-radius: 12px;
+  border-radius: 14px;
   pointer-events: none;
   z-index: 0;
   background:
     radial-gradient(circle at 20% 30%, rgba(49, 224, 255, 0.24), transparent 58%),
     radial-gradient(circle at 80% 70%, rgba(255, 45, 111, 0.24), transparent 60%);
-  filter: blur(4px);
-  opacity: 0.75;
-  animation: beMoreAuraPulse 1.8s ease-in-out infinite;
+  filter: blur(5px);
+  opacity: 0.88;
+  animation: beMoreAuraPulse 2.2s ease-in-out infinite;
 }
 
 .ecosystem-btn::after {
   content: "";
   position: absolute;
   inset: 2px;
-  border-radius: 10px;
+  border-radius: 11px;
   pointer-events: none;
-  border: 1px solid rgba(49, 224, 255, 0.85);
-  box-shadow: inset 0 0 14px rgba(49, 224, 255, 0.32);
+  border: 1px solid rgba(49, 224, 255, 0.92);
+  box-shadow:
+    inset 0 0 14px rgba(49, 224, 255, 0.32),
+    inset 0 0 0 1px rgba(255, 45, 111, 0.32);
   z-index: 1;
 }
 
@@ -512,28 +513,28 @@ body::after {
 .be-more-dock-btn:active,
 .be-more-dock-btn.is-pressed {
   transform: translateY(1px) scale(0.985);
-  filter: brightness(1.1) saturate(1.14);
+  filter: brightness(1.1) saturate(1.16);
   box-shadow:
     0 0 0 1px rgba(49, 224, 255, 0.95),
-    0 0 24px rgba(49, 224, 255, 0.75),
-    0 0 26px rgba(255, 45, 111, 0.6);
+    0 0 30px rgba(49, 224, 255, 0.9),
+    0 0 28px rgba(255, 45, 111, 0.72);
 }
 
-@keyframes beMoreIdlePulse {
+@keyframes beMoreCorePulse {
   0%,
   100% {
     box-shadow:
-      0 0 0 1px rgba(255, 45, 111, 0.78),
-      0 0 20px rgba(49, 224, 255, 0.82),
-      0 0 22px rgba(255, 45, 111, 0.68),
-      inset 0 0 0 1px rgba(49, 224, 255, 0.28);
+      0 0 0 1px rgba(255, 45, 111, 0.84),
+      0 0 22px rgba(49, 224, 255, 0.9),
+      0 0 22px rgba(255, 45, 111, 0.72),
+      inset 0 0 0 1px rgba(49, 224, 255, 0.34);
   }
   50% {
     box-shadow:
-      0 0 0 1px rgba(49, 224, 255, 0.92),
-      0 0 28px rgba(49, 224, 255, 0.96),
-      0 0 28px rgba(255, 45, 111, 0.82),
-      inset 0 0 0 1px rgba(255, 45, 111, 0.36);
+      0 0 0 1px rgba(49, 224, 255, 0.96),
+      0 0 34px rgba(49, 224, 255, 1),
+      0 0 30px rgba(255, 45, 111, 0.86),
+      inset 0 0 0 1px rgba(255, 45, 111, 0.4);
   }
 }
 

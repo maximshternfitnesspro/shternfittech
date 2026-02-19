@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Russo+One&display=swap" rel="stylesheet" />
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link rel="stylesheet" href="styles-motif.css?v=20260218h" />
+    <link rel="stylesheet" href="styles-motif.css?v=20260219a" />
   </head>
   <body>
     <div class="global-overlay" aria-hidden="true"></div>
@@ -144,7 +144,7 @@
             <div class="plan-badge__benefits" id="sidebar-upgrade-benefits">
               BOOST: всё, что есть в CORE и: разборы куратора, закрытая группа, приоритетная поддержка.
             </div>
-            <button class="btn btn--ghost plan-badge__btn" id="sidebar-upgrade-btn">Оформить BOOST (мес.)</button>
+            <button class="btn btn--ghost plan-badge__btn" id="sidebar-upgrade-btn">Оформить BOOST (−25% по реф-ссылке)</button>
           </div>
         </div>
       </aside>
@@ -330,14 +330,15 @@
               <div class="referral-card">
                 <div class="referral-card__title">Реферальная программа</div>
                 <div class="referral-card__text">
-                  Пригласи друга и получи 1 месяц CORE бесплатно после его первой успешной оплаты по твоей ссылке.
+                  Друг получает скидку 25% на первый платёж по твоей ссылке. Ты получаешь 1 месяц CORE после его первой
+                  успешной оплаты.
                 </div>
                 <div class="referral-card__link" id="ref-link">https://t.me/cheatcodewith_bot</div>
                 <div class="cta-row referral-card__actions">
                   <button class="btn btn--ghost" id="ref-copy-btn">Скопировать</button>
                   <button class="btn btn--primary" id="progress-share-btn">Поделиться</button>
                 </div>
-                <div class="referral-card__note">Бонус начисляется только после оплаты друга.</div>
+                <div class="referral-card__note">Скидка 25% действует для приглашённого. Бонус месяца — после первой оплаты друга.</div>
               </div>
               <div class="progress-log" id="progress-log"></div>
               <div class="warning-block hidden" id="progress-paywall-block">
@@ -362,8 +363,8 @@
               <div class="shop-grid">
                 <article class="shop-item">
                   <div class="shop-item__type">PDF-ГАЙД</div>
-                  <div class="shop-item__name">Умная тарелка: ешь и сушись без подсчёта</div>
-                  <div class="shop-item__desc">Путаешься в еде? Готовая схема тарелки на каждый приём: собрал питание за 2 минуты и держишь дефицит без стресса.</div>
+                  <div class="shop-item__name">Умная тарелка: худей без калькулятора</div>
+                  <div class="shop-item__desc">Не знаешь, что есть? Бери готовый шаблон тарелки и собирай питание за 2 минуты без нервов и срывов.</div>
                   <button
                     class="btn btn--ghost shop-buy"
                     data-item="smart_plate_pdf"
@@ -375,8 +376,8 @@
                 </article>
                 <article class="shop-item">
                   <div class="shop-item__type">PDF-ГАЙД</div>
-                  <div class="shop-item__name">Анти-зажор: контроль стресса без еды</div>
-                  <div class="shop-item__desc">Срываешься на эмоциях? Пошаговый протокол остановки зажора до отката в весе и потери режима.</div>
+                  <div class="shop-item__name">Анти-зажор: стоп стрессовым срывам</div>
+                  <div class="shop-item__desc">Тянет заедать стресс и скуку? Протокол «стоп-срыв» помогает вернуть контроль до отката по весу.</div>
                   <button
                     class="btn btn--ghost shop-buy"
                     data-item="anti_binge_pdf"
@@ -388,8 +389,8 @@
                 </article>
                 <article class="shop-item">
                   <div class="shop-item__type">PDF-ГАЙД</div>
-                  <div class="shop-item__name">Ночной дожор: вечера без срывов</div>
-                  <div class="shop-item__desc">После 21:00 тянет на сладкое? Вечерний алгоритм, чтобы не срывать дефицит и просыпаться в контроле.</div>
+                  <div class="shop-item__name">Ночной дожор: контроль после 21:00</div>
+                  <div class="shop-item__desc">Срываешься ночью? Вечерний алгоритм закрывает тягу к сладкому и сохраняет дефицит до утра.</div>
                   <button
                     class="btn btn--ghost shop-buy"
                     data-item="night_binge_pdf"
@@ -401,8 +402,8 @@
                 </article>
                 <article class="shop-item">
                   <div class="shop-item__type">PDF-ГАЙД</div>
-                  <div class="shop-item__name">Бока и живот: сухой пресс без магии</div>
-                  <div class="shop-item__desc">Живот и бока стоят месяцами? Чек-лист питания, активности и ошибок, который двигает результат в цифрах и зеркале.</div>
+                  <div class="shop-item__name">Бока и живот: включи визуальный прогресс</div>
+                  <div class="shop-item__desc">Пресс не проявляется? Чек-лист по питанию и активности убирает типовые ошибки и двигает форму в зеркале.</div>
                   <button
                     class="btn btn--ghost shop-buy"
                     data-item="belly_sides_pdf"
@@ -481,6 +482,7 @@
                 <span class="sub-highlight">ТЕКУЩИЙ УРОВЕНЬ</span>: CORE.
                 <span class="sub-highlight">МОДУЛЬ ТРЕНИРОВОК</span>: ПЕРЕЗАПУСК.
               </div>
+              <div class="metric__label">РЕФ-СКИДКА: 25% на первый платёж по приглашению.</div>
               <div class="pending-upgrade hidden" id="subscription-pending">
                 <div class="pending-upgrade__title">Ожидается оплата</div>
                 <div class="pending-upgrade__text" id="subscription-pending-text">
@@ -501,8 +503,8 @@
                   <div class="sub-card__title">CORE</div>
                   <div class="sub-card__desc">Идеально для тех, кто хочет попробовать или умеет сам.</div>
                   <div class="sub-card__term">1 490 ₽ / мес · 2 990 ₽ / 3 мес</div>
-                  <div class="sub-card__sale">Скидка 33%: 3 мес за 2 990 ₽ вместо 4 470 ₽</div>
-                  <button class="btn btn--ghost" id="upgrade-core-btn" disabled>Открыть CORE · 1 490 ₽/мес</button>
+                  <div class="sub-card__sale">Реф-скидка 25% на первый платёж по приглашению</div>
+                  <button class="btn btn--ghost" id="upgrade-core-btn" disabled>Открыть CORE · −25% по реф-ссылке</button>
                   <div class="sub-card__inherit">Что входит:</div>
                   <div class="sub-card__divider"></div>
                   <ul class="sub-card__list">
@@ -517,8 +519,8 @@
                   <div class="sub-card__title">BOOST</div>
                   <div class="sub-card__desc">Для тех, кому нужна среда и страховка от ошибок.</div>
                   <div class="sub-card__term">3 490 ₽ / мес · 6 990 ₽ / 3 мес</div>
-                  <div class="sub-card__sale">Скидка 33%: 3 мес за 6 990 ₽ вместо 10 470 ₽</div>
-                  <button class="btn btn--ghost" id="upgrade-boost-btn">Открыть BOOST · 3 490 ₽/мес</button>
+                  <div class="sub-card__sale">Реф-скидка 25% на первый платёж по приглашению</div>
+                  <button class="btn btn--ghost" id="upgrade-boost-btn">Открыть BOOST · −25% по реф-ссылке</button>
                   <div class="sub-card__inherit">Всё, что есть в CORE и:</div>
                   <div class="sub-card__divider"></div>
                   <ul class="sub-card__list">
@@ -533,8 +535,8 @@
                   <div class="sub-card__title">ELITE</div>
                   <div class="sub-card__desc">Полный аутсорс дисциплины и гарантия возврата.</div>
                   <div class="sub-card__term">34 990 ₽ · разовая покупка</div>
-                  <div class="sub-card__sale">Разовый доступ без ежемесячного продления</div>
-                  <button class="btn btn--ghost" id="upgrade-elite-btn">Купить ELITE · 34 990 ₽</button>
+                  <div class="sub-card__sale">Реф-скидка 25% на первый платёж по приглашению</div>
+                  <button class="btn btn--ghost" id="upgrade-elite-btn">Купить ELITE · −25% по реф-ссылке</button>
                   <div class="sub-card__inherit">Всё, что есть в BOOST и:</div>
                   <div class="sub-card__divider"></div>
                   <ul class="sub-card__list">
@@ -647,7 +649,7 @@
         <div class="dock__panel">
           <div class="dock__title">Оперативный центр</div>
           <div class="dock-actions">
-            <button class="btn btn--primary" id="dock-share-btn">Пригласи друга и получи бесплатный месяц</button>
+            <button class="btn btn--primary" id="dock-share-btn">Пригласи друга: ему −25%, тебе месяц CORE</button>
             <button class="btn btn--ghost" id="dock-support-btn">Нашли ошибку? Сообщить</button>
             <button class="btn btn--ghost be-more-dock-btn" id="dock-ecosystem-btn">
               <span class="be-more-dock-btn__title">BE MORE HUB</span>
@@ -801,6 +803,6 @@
       </div>
     </div>
 
-    <script src="app.js?v=20260218h"></script>
+    <script src="app.js?v=20260219a"></script>
   </body>
 </html>

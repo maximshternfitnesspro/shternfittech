@@ -427,22 +427,12 @@ function buildFeedbackContext() {
 }
 
 function buildShareText() {
-  const completedLevels = completedLevelsCount();
-  const progress =
-    state.subscription === "DEMO"
-      ? `DEMO ${completedDemoLevels()}/${DEMO_LEVEL_CAP}`
-      : `уровни ${completedLevels}/30`;
-
-  const bossReferenceLevel = clamp(state.currentLevelPassed ? state.level + 1 : state.level, 1, 30);
-  if (state.subscription === "DEMO") {
-    const left = demoLevelsLeft();
-    const tail = left > 0 ? `Осталось ${formatLevelCount(left)} демо.` : "Демо завершено.";
-    return `Я прохожу «Чит-код на сушку». Сейчас у меня ${progress}. ${tail} Залетай по ссылке и запускай свой уровень 01.`;
-  }
-
-  const distance = levelsToBoss(bossReferenceLevel);
-  const tail = distance > 0 ? `До босса ${formatLevelCount(distance)}.` : "Босс цикла пройден.";
-  return `Я в «Чит-код на сушку»: ${progress}. ${tail} Присоединяйся по моей ссылке — будем проходить вместе.`;
+  return (
+    "Йоу! Ты видел это!? ПОХУДЕНИЕ в режиме RPG! " +
+    "Я уже активировал персональный ЧИТ-КОД НА СУШКУ и готовлюсь к лету по полной без лишнего стресса. " +
+    "Присоединяйся по моей ссылке и будем проходить вместе! " +
+    "По этой ссылке активируй чит-код и получай скидку 25%! Оно того стоит!"
+  );
 }
 
 function getReferralLink() {
@@ -453,7 +443,7 @@ function getReferralLink() {
 
 async function shareProgress() {
   const shareUrl = getReferralLink();
-  const text = `${buildShareText()} Реф-бонус: мне начисляется 1 месяц CORE после твоей первой оплаты.`;
+  const text = buildShareText();
   try {
     if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
       await navigator.clipboard.writeText(`${text}\n${shareUrl}`);
@@ -1409,15 +1399,15 @@ function render() {
     if (!next) {
       sidebarUpgradeBtn.textContent = "Максимальный уровень";
     } else {
-      if (next === "CORE") sidebarUpgradeBtn.textContent = "Открыть CORE (1 490 ₽/мес)";
-      else if (next === "BOOST") sidebarUpgradeBtn.textContent = "Оформить BOOST (3 490 ₽/мес)";
-      else sidebarUpgradeBtn.textContent = "Купить ELITE (34 990 ₽)";
+      if (next === "CORE") sidebarUpgradeBtn.textContent = "Открыть CORE (−25% по реф-ссылке)";
+      else if (next === "BOOST") sidebarUpgradeBtn.textContent = "Оформить BOOST (−25% по реф-ссылке)";
+      else sidebarUpgradeBtn.textContent = "Купить ELITE (−25% по реф-ссылке)";
     }
   }
   if (upgradeCoreBtn) {
     if (state.subscription === "DEMO") {
       upgradeCoreBtn.disabled = false;
-      upgradeCoreBtn.textContent = pendingTier === "CORE" ? "Ожидается оплата CORE" : "Открыть CORE · 1 490 ₽/мес";
+      upgradeCoreBtn.textContent = pendingTier === "CORE" ? "Ожидается оплата CORE" : "Открыть CORE · −25% по реф-ссылке";
     } else if (state.subscription === "CORE") {
       upgradeCoreBtn.disabled = true;
       upgradeCoreBtn.textContent = "Текущий уровень";
@@ -1430,7 +1420,7 @@ function render() {
     if (state.subscription === "DEMO" || state.subscription === "CORE") {
       upgradeBoostBtn.disabled = false;
       upgradeBoostBtn.textContent =
-        pendingTier === "BOOST" ? "Ожидается оплата BOOST" : "Открыть BOOST · 3 490 ₽/мес";
+        pendingTier === "BOOST" ? "Ожидается оплата BOOST" : "Открыть BOOST · −25% по реф-ссылке";
     } else if (state.subscription === "BOOST") {
       upgradeBoostBtn.disabled = true;
       upgradeBoostBtn.textContent = "Текущий уровень";
@@ -1445,7 +1435,7 @@ function render() {
       upgradeEliteBtn.textContent = "Текущий уровень";
     } else {
       upgradeEliteBtn.disabled = false;
-      upgradeEliteBtn.textContent = pendingTier === "ELITE" ? "Ожидается оплата ELITE" : "Купить ELITE · 34 990 ₽";
+      upgradeEliteBtn.textContent = pendingTier === "ELITE" ? "Ожидается оплата ELITE" : "Купить ELITE · −25% по реф-ссылке";
     }
   }
 
@@ -1780,7 +1770,7 @@ async function upgradeSubscription(target) {
   setActiveScreen("subscription");
   closeDemoPaywall();
   if (shopMessage) {
-    shopMessage.textContent = `Оплата ${target} открыта в Tribute. После оплаты нажми «Проверить оплату».`;
+    shopMessage.textContent = `Оплата ${target} открыта в Tribute. По реф-ссылке действует скидка 25%. После оплаты нажми «Проверить оплату».`;
   }
 }
 
@@ -2319,7 +2309,10 @@ if (!motifReady) {
         if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
           await navigator.clipboard.writeText(link);
         }
-        if (shopMessage) shopMessage.textContent = "Ссылка скопирована. Бонус месяца начисляется после первой оплаты друга.";
+        if (shopMessage) {
+          shopMessage.textContent =
+            "Ссылка скопирована. Другу — скидка 25% на первый платёж, тебе — месяц CORE после его первой оплаты.";
+        }
       } catch {
         if (shopMessage) shopMessage.textContent = "Не удалось скопировать ссылку. Поделись вручную.";
       }
@@ -2329,7 +2322,10 @@ if (!motifReady) {
     dockShareBtn.addEventListener("click", async () => {
       playUiClick("upgrade");
       triggerHaptic("heavy");
-      if (shopMessage) shopMessage.textContent = "Отправляй ссылку другу: бонус месяца после его первой оплаты.";
+      if (shopMessage) {
+        shopMessage.textContent =
+          "Отправляй ссылку: другу — скидка 25% на первый платёж, тебе — месяц CORE после его первой оплаты.";
+      }
       await shareProgress();
     });
   }
