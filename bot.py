@@ -18,6 +18,7 @@ from telegram.ext import Application, CallbackQueryHandler, CommandHandler, Cont
 
 
 ASSET_VERSION = "20260218h"
+TIER_DISPLAY = {"DEMO": "FREE", "CORE": "CORE", "BOOST": "PRO", "ELITE": "VIP"}
 
 TRIBUTE_LINKS = {
     "CORE": {
@@ -77,6 +78,11 @@ def build_bottom_keyboard() -> ReplyKeyboardMarkup:
     )
 
 
+def tier_label(value: str) -> str:
+    normalized = (value or "").strip().upper()
+    return TIER_DISPLAY.get(normalized, normalized or "FREE")
+
+
 def fetch_status(tg_user_id: int) -> dict[str, str]:
     query = urllib.parse.urlencode({"tg_user_id": str(tg_user_id)})
     url = f"{SETTINGS.backend_url}/api/access/status?{query}"
@@ -96,12 +102,13 @@ def fetch_status(tg_user_id: int) -> dict[str, str]:
 
 
 def format_status_text(status: dict[str, str]) -> str:
-    tier = status.get("tier") or "DEMO"
+    tier = tier_label(status.get("tier") or "DEMO")
     pending = status.get("pending_tier") or ""
+    pending_label = tier_label(pending) if pending else ""
     if pending:
         return (
             f"Текущий уровень: {tier}\n"
-            f"Ожидается оплата: {pending}\n"
+            f"Ожидается оплата: {pending_label}\n"
             "После оплаты нажми «Проверить оплату» внутри Mini App."
         )
     return f"Текущий уровень: {tier}\nОплат в ожидании нет."
@@ -112,9 +119,9 @@ def plans_text() -> str:
         "💳 Тарифы:\n\n"
         "🟦 CORE — 1 490 ₽/мес (2 990 ₽/3 мес)\n"
         f"{TRIBUTE_LINKS['CORE']['telegram']}\n\n"
-        "🟪 BOOST — 3 490 ₽/мес (6 990 ₽/3 мес)\n"
+        "🟪 PRO — 3 490 ₽/мес (6 990 ₽/3 мес)\n"
         f"{TRIBUTE_LINKS['BOOST']['telegram']}\n\n"
-        "🟥 ELITE — 34 990 ₽ (разовая покупка)\n"
+        "🟥 VIP — 34 990 ₽ (разовая покупка)\n"
         f"{TRIBUTE_LINKS['ELITE']['telegram']}"
     )
 

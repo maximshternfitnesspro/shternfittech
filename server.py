@@ -23,6 +23,7 @@ DB_PATH = BASE_DIR / "data" / "miniapp.db"
 DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 
 TIER_ORDER = {"DEMO": 0, "CORE": 1, "BOOST": 2, "ELITE": 3}
+TIER_DISPLAY = {"DEMO": "FREE", "CORE": "CORE", "BOOST": "PRO", "ELITE": "VIP"}
 TIER_HINTS = {
     "CORE": {"core", "sNQO".lower(), "nqo"},
     "BOOST": {"boost", "sNQP".lower(), "nqp"},
@@ -198,6 +199,13 @@ def normalize_tier(value: Any) -> str | None:
         return None
     text = str(value).strip().upper()
     return text if text in TIER_ORDER else None
+
+
+def tier_label(value: Any) -> str:
+    normalized = normalize_tier(value)
+    if not normalized:
+        return str(value or "").strip() or "FREE"
+    return TIER_DISPLAY.get(normalized, normalized)
 
 
 def json_dumps(payload: Any) -> str:
@@ -487,7 +495,11 @@ def has_referrer(invitee_tg_user_id: str) -> bool:
 
 def payment_link_for_tier(tier: str, invitee_tg_user_id: str | None = None) -> tuple[str, bool]:
     normalized = normalize_tier(tier) or "CORE"
-    referral_active = bool(invitee_tg_user_id and has_referrer(invitee_tg_user_id))
+    referral_active = bool(
+        invitee_tg_user_id
+        and has_referrer(invitee_tg_user_id)
+        and normalized in {"CORE", "BOOST"}
+    )
     if referral_active:
         ref_link = (TRIBUTE_REF_LINKS.get(normalized) or "").strip()
         if ref_link:
@@ -837,16 +849,17 @@ async def access_pending(request: Request) -> dict[str, Any]:
     # Avoid spamming the same button repeatedly.
     payment_url, referral_active = payment_link_for_tier(tier, tg_user_id)
     if verified and payment_url and (pending_before != tier or resend):
-        discount_note = " По реф-ссылке действует скидка 25%." if referral_active else ""
+        discount_note = " По реф-ссылке действует скидка 25% (CORE/PRO)." if referral_active else ""
+        tier_text = tier_label(tier)
         send_telegram_message(
             tg_user_id,
             (
-                f"Открыта оплата {tier}.\n\n"
+                f"Открыта оплата {tier_text}.\n\n"
                 "Нажми кнопку ниже. После оплаты вернись в Mini App — доступ обновится автоматически."
                 f"{discount_note}"
             ),
             reply_markup={
-                "inline_keyboard": [[{"text": f"Оплатить {tier}", "url": payment_url}]],
+                "inline_keyboard": [[{"text": f"Оплатить {tier_text}", "url": payment_url}]],
             },
         )
 
@@ -1031,7 +1044,7 @@ async def tribute_webhook(request: Request, token: str | None = None) -> JSONRes
     notified = send_telegram_message(
         tg_user_id,
         (
-            f"Оплата подтверждена. Доступ {tier_after} активирован.\n\n"
+            f"Оплата подтверждена. Доступ {tier_label(tier_after)} активирован.\n\n"
             "Открой Mini App и продолжай уровни. Если уровень не обновился — зайди в «Подписка» и нажми «Проверить оплату»."
         ),
         reply_markup=build_bot_menu_markup(request),

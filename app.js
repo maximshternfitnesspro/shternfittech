@@ -6,10 +6,11 @@ const LEVEL_UNLOCK_HOUR = 7;
 const LEVEL_UNLOCK_TZ_LABEL = "МСК";
 const MOSCOW_OFFSET_MS = 3 * 60 * 60 * 1000;
 const PAYMENT_STATUS_POLL_MS = 15000;
-const ONBOARDING_VERSION = 6;
+const ONBOARDING_VERSION = 7;
 const DEMO_LEVEL_CAP = 3;
-const ALWAYS_SHOW_ONBOARDING = true;
+const ALWAYS_SHOW_ONBOARDING = false;
 const TIER_RANK = { DEMO: 0, CORE: 1, BOOST: 2, ELITE: 3 };
+const TIER_DISPLAY = { DEMO: "FREE", CORE: "CORE", BOOST: "PRO", ELITE: "VIP" };
 const SUPPORT_USERNAME = "bemoresupport";
 const MAIN_BOT_LINK = "https://t.me/cheatcodewith_bot";
 const STARTUP_SCREEN = (() => {
@@ -32,6 +33,12 @@ const TRIBUTE_PAYMENT_LINKS = {
     web: "https://web.tribute.tg/shop/pay/9f5939e0-1153-4e1e-99dc-d311b5ff8029",
   },
 };
+
+const MISSION_PLAYLISTS = [
+  "PLb4Ou10Gnnm_7XmnZy-b6E5linHwddGgD",
+  "PLb4Ou10Gnnm-J2XtqGNcu-ttchlXMPBuj",
+  "PLb4Ou10Gnnm8XbmNKhGQgrVWeX0fa3V-W",
+];
 
 const DEFAULT_STATE = {
   level: 1,
@@ -57,6 +64,12 @@ const DEFAULT_STATE = {
   pendingUpgrade: null,
   quick: {
     hydrationMl: 1200,
+  },
+  quickWin: {
+    day1: false,
+    day2: false,
+    day3: false,
+    bonusGranted: false,
   },
 };
 
@@ -131,6 +144,8 @@ const resultNextBtn = document.getElementById("result-next");
 
 const missionStartBtn = document.getElementById("mission-start");
 const missionWatchFill = document.getElementById("mission-watch-fill");
+const missionOpenVideoBtn = document.getElementById("mission-open-video");
+const missionFlowHint = document.getElementById("mission-flow-hint");
 
 const shopButtons = document.querySelectorAll(".shop-buy");
 const shopMessage = document.getElementById("shop-message");
@@ -178,6 +193,10 @@ const homeDetails = document.getElementById("home-details");
 const homeDetailsToggle = document.getElementById("home-details-toggle");
 const homeWindowDetails = document.getElementById("home-window-details");
 const homeBonusDetails = document.getElementById("home-bonus-details");
+const sosBtn = document.getElementById("sos-btn");
+const quickWinChip = document.getElementById("quickwin-chip");
+const quickWinNote = document.getElementById("quickwin-note");
+const quickWinButtons = document.querySelectorAll("[data-quickwin]");
 
 const missionPanelTitle = document.getElementById("mission-panel-title");
 
@@ -190,6 +209,10 @@ const progressLog = document.getElementById("progress-log");
 const progressPaywallBlock = document.getElementById("progress-paywall-block");
 const progressPaywallBtn = document.getElementById("progress-paywall-btn");
 const progressShareBtn = document.getElementById("progress-share-btn");
+const scorecardDiscipline = document.getElementById("scorecard-discipline");
+const scorecardMissions = document.getElementById("scorecard-missions");
+const scorecardStreak = document.getElementById("scorecard-streak");
+const scorecardForecast = document.getElementById("scorecard-forecast");
 const refLink = document.getElementById("ref-link");
 const refCopyBtn = document.getElementById("ref-copy-btn");
 const referralCopyMain = document.getElementById("referral-copy-main");
@@ -249,6 +272,10 @@ const ecosystemModal = document.getElementById("ecosystem-modal");
 const ecosystemModalBackdrop = document.getElementById("ecosystem-modal-backdrop");
 const ecosystemModalClose = document.getElementById("ecosystem-modal-close");
 const ecosystemWaitlistBtn = document.getElementById("ecosystem-waitlist-btn");
+const sosModal = document.getElementById("sos-modal");
+const sosModalBackdrop = document.getElementById("sos-modal-backdrop");
+const sosModalClose = document.getElementById("sos-modal-close");
+const sosOpenSupport = document.getElementById("sos-open-support");
 const tourOverlay = document.getElementById("tour-overlay");
 const tourShadeTop = document.getElementById("tour-shade-top");
 const tourShadeLeft = document.getElementById("tour-shade-left");
@@ -281,10 +308,10 @@ let state = loadState();
 let onboardingStep = 1;
 
 const MISSION_TOTAL_SECONDS = 15 * 60;
-const DEMO_TICK_MS = 300;
-const DEMO_SECONDS_STEP = 18;
 let missionRemaining = MISSION_TOTAL_SECONDS;
-let missionInterval = null;
+let missionInProgress = false;
+let missionWatchedSeconds = 0;
+let missionHiddenStartedAt = null;
 let previewTimer = null;
 let sfxContext = null;
 let sfxUnlocked = false;
@@ -425,7 +452,7 @@ function openSupportChat(prefilledText = "") {
 function buildFeedbackContext() {
   const parts = [];
   parts.push(`[Mini App] Уровень: ${String(state.level).padStart(2, "0")}`);
-  parts.push(`Подписка: ${state.subscription}`);
+  parts.push(`Подписка: ${tierLabel(state.subscription)}`);
   if (state.window) parts.push(`Окно: ${state.window}`);
   return parts.join(" | ");
 }
@@ -437,6 +464,22 @@ function buildShareText() {
     "Присоединяйся по моей ссылке и будем проходить вместе! " +
     "По этой ссылке активируй чит-код и получай скидку 25%! Оно того стоит!"
   );
+}
+
+function displayTierName(tier) {
+  const normalized = String(tier || "").toUpperCase();
+  return TIER_DISPLAY[normalized] || normalized || "FREE";
+}
+
+function missionPlaylistByLevel(level) {
+  const safeLevel = clamp(Number(level) || 1, 1, 30);
+  const index = (safeLevel - 1) % MISSION_PLAYLISTS.length;
+  return MISSION_PLAYLISTS[index];
+}
+
+function missionVideoUrlByLevel(level) {
+  const playlist = missionPlaylistByLevel(level);
+  return `https://www.youtube.com/playlist?list=${encodeURIComponent(playlist)}`;
 }
 
 function getReferralLink() {
@@ -642,7 +685,7 @@ function applyAccessStatus(status, { manual = false } = {}) {
   if (remoteTier && applyConfirmedTier(remoteTier)) {
     changed = true;
     if (shopMessage) {
-      shopMessage.textContent = `Оплата подтверждена. Уровень ${remoteTier} активирован.`;
+      shopMessage.textContent = `Оплата подтверждена. Уровень ${tierLabel(remoteTier)} активирован.`;
     }
     triggerHaptic("success");
   }
@@ -674,7 +717,7 @@ function applyAccessStatus(status, { manual = false } = {}) {
     if (getPendingUpgradeTier()) {
       shopMessage.textContent = "Оплата ещё не подтверждена. Заверши платёж в Tribute и проверь снова.";
     } else {
-      shopMessage.textContent = `Текущий уровень: ${state.subscription}. Новых оплат не найдено.`;
+      shopMessage.textContent = `Текущий уровень: ${tierLabel(state.subscription)}. Новых оплат не найдено.`;
     }
   }
 }
@@ -924,6 +967,7 @@ function loadState() {
   try {
     const parsed = JSON.parse(raw);
     const parsedQuick = parsed.quick || {};
+    const parsedQuickWin = parsed.quickWin || {};
     const legacyHydration = Number(parsedQuick.hydration);
     const hydrationMl = Number.isFinite(parsedQuick.hydrationMl)
       ? parsedQuick.hydrationMl
@@ -958,6 +1002,12 @@ function loadState() {
       pendingUpgrade: pendingTier ? { tier: pendingTier, createdAt: pendingCreatedAt } : null,
       quick: {
         hydrationMl: clamp(Math.round(hydrationMl), 0, HYDRATION_TARGET_ML),
+      },
+      quickWin: {
+        day1: Boolean(parsedQuickWin.day1),
+        day2: Boolean(parsedQuickWin.day2),
+        day3: Boolean(parsedQuickWin.day3),
+        bonusGranted: Boolean(parsedQuickWin.bonusGranted),
       },
     };
   } catch {
@@ -1075,6 +1125,13 @@ function formatUnlockDate(date) {
   const hours = pad2(moscowDate.getUTCHours());
   const minutes = pad2(moscowDate.getUTCMinutes());
   return `${day}.${month} в ${hours}:${minutes} ${LEVEL_UNLOCK_TZ_LABEL}`;
+}
+
+function formatProgressLogTime(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return `${pad2(date.getDate())}.${pad2(date.getMonth() + 1)} ${pad2(date.getHours())}:${pad2(date.getMinutes())}`;
 }
 
 function getNextUnlockDate(from = new Date()) {
@@ -1195,13 +1252,13 @@ function getPendingUpgradeTier() {
 }
 
 function tierLabel(tier) {
-  return tier;
+  return displayTierName(tier);
 }
 
 function nextTierBenefits(tier) {
   if (tier === "DEMO") return "CORE: полный доступ после 3 бесплатных уровней демо.";
-  if (tier === "CORE") return "BOOST: всё, что есть в CORE и: разборы куратора, закрытая группа, приоритетная поддержка.";
-  if (tier === "BOOST") return "ELITE: всё, что есть в BOOST и: личный контроль 24/7, персональная стратегия, консьерж.";
+  if (tier === "CORE") return "PRO: всё из CORE + еженедельные разборы, закрытая группа и приоритетная поддержка.";
+  if (tier === "BOOST") return "VIP: всё из PRO + персональная стратегия и личный контроль.";
   return "Максимальный уровень уже активен.";
 }
 
@@ -1291,7 +1348,7 @@ function metricsSnapshot() {
 }
 
 function missionProgress() {
-  return 1 - missionRemaining / MISSION_TOTAL_SECONDS;
+  return clamp(missionWatchedSeconds / MISSION_TOTAL_SECONDS, 0, 1);
 }
 
 function updateMissionProgressUI() {
@@ -1315,6 +1372,29 @@ function progressTargetValue() {
     return clamp(completedDemoLevels() / DEMO_LEVEL_CAP, 0, 1);
   }
   return clamp(completedLevelsCount() / 30, 0, 1);
+}
+
+function quickWinDoneCount() {
+  return [state.quickWin?.day1, state.quickWin?.day2, state.quickWin?.day3].filter(Boolean).length;
+}
+
+function weeklyScorecardData() {
+  const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  const history = Array.isArray(state.completedHistory) ? state.completedHistory : [];
+  const datedEntries = history.filter((entry) => {
+    if (!entry?.completedAt) return false;
+    const ts = Date.parse(entry.completedAt);
+    return Number.isFinite(ts) && ts >= weekAgo;
+  });
+  const missions = datedEntries.length > 0 ? datedEntries.length : history.slice(-7).length;
+  const discipline = clamp(Math.round((missions / 7) * 100), 0, 100);
+  const bossDistance = levelsToBoss(clamp(state.currentLevelPassed ? state.level + 1 : state.level, 1, 30));
+  return {
+    missions,
+    discipline,
+    streak: state.syncSeries || 0,
+    forecast: bossDistance > 0 ? `${bossDistance} дн.` : "Босс сегодня",
+  };
 }
 
 function setProgressRingValue(value) {
@@ -1351,9 +1431,8 @@ function animateProgressRingTo(targetValue, { reset = false } = {}) {
 }
 
 function setActiveScreen(name) {
-  if (name !== "mission" && missionInterval) {
-    stopMissionTimer();
-    if (missionRemaining > 0) resetMission();
+  if (name !== "mission" && missionInProgress) {
+    cancelMissionProgress("Миссия не завершена. Начни заново.");
   }
   if (name !== "result" && resultBurst && resultTotal) {
     resultBurst.classList.add("hidden");
@@ -1411,7 +1490,7 @@ function render() {
   if (subscriptionCurrentChip) subscriptionCurrentChip.textContent = tierLabel(state.subscription);
   if (subscriptionHeadline) {
     if (state.subscription === "DEMO") {
-      subscriptionHeadline.innerHTML = `<span class="sub-highlight">ТЕКУЩИЙ УРОВЕНЬ</span>: DEMO (${completedDemoLevels()}/${DEMO_LEVEL_CAP}). <span class="sub-highlight">МОДУЛЬ ТРЕНИРОВОК</span>: ${state.mode.toUpperCase()}.`;
+      subscriptionHeadline.innerHTML = `<span class="sub-highlight">ТЕКУЩИЙ УРОВЕНЬ</span>: FREE (${completedDemoLevels()}/${DEMO_LEVEL_CAP}). <span class="sub-highlight">МОДУЛЬ ТРЕНИРОВОК</span>: ${state.mode.toUpperCase()}.`;
     } else {
       subscriptionHeadline.innerHTML = `<span class="sub-highlight">ТЕКУЩИЙ УРОВЕНЬ</span>: ${tierLabel(state.subscription)}. <span class="sub-highlight">МОДУЛЬ ТРЕНИРОВОК</span>: ${state.mode.toUpperCase()}.`;
     }
@@ -1420,17 +1499,16 @@ function render() {
   if (subscriptionRefNote) {
     subscriptionRefNote.textContent = referralDiscount > 0
       ? `РЕФ-СКИДКА АКТИВНА: ${referralDiscount}% на первый платёж.`
-      : "РЕФ-СКИДКА: 25% на первый платёж по приглашению.";
+      : "РЕФ-СКИДКА: 25% на первый платёж CORE/PRO по приглашению.";
   }
   if (referralCopyMain) {
-    referralCopyMain.textContent = referralDiscount > 0
-      ? `Твоя ссылка даёт другу скидку ${referralDiscount}% на первый платёж. После его оплаты тебе начисляется 1 месяц CORE.`
-      : "Друг получает скидку 25% на первый платёж по твоей ссылке. Ты получаешь 1 месяц CORE после его первой успешной оплаты.";
+    referralCopyMain.textContent =
+      "Йоу! Ты видел это!? ПОХУДЕНИЕ в режиме RPG! Я уже активировал персональный ЧИТ-КОД НА СУШКУ и готовлюсь к лету по полной без лишнего стресса. Присоединяйся по моей ссылке и будем проходить вместе!";
   }
   if (referralCopyNote) {
     referralCopyNote.textContent = referralDiscount > 0
-      ? `Скидка ${referralDiscount}% уже активна для приглашённого. Бонус месяца — после первой оплаты друга.`
-      : "Скидка 25% действует для приглашённого. Бонус месяца — после первой оплаты друга.";
+      ? `По твоей ссылке активна скидка ${referralDiscount}% на CORE/PRO. Бонус: 1 месяц CORE после первой оплаты друга.`
+      : "По ссылке друг получает скидку 25% на CORE/PRO. После его первой оплаты тебе начисляется 1 месяц CORE.";
   }
   if (sidebarUpgradeBenefits) sidebarUpgradeBenefits.textContent = nextTierBenefits(state.subscription);
   if (sidebarSubscriptionTerm) {
@@ -1451,15 +1529,16 @@ function render() {
     if (!next) {
       sidebarUpgradeBtn.textContent = "Максимальный уровень";
     } else {
-      if (next === "CORE") sidebarUpgradeBtn.textContent = "Открыть CORE (−25% по реф-ссылке)";
-      else if (next === "BOOST") sidebarUpgradeBtn.textContent = "Оформить BOOST (−25% по реф-ссылке)";
-      else sidebarUpgradeBtn.textContent = "Купить ELITE (−25% по реф-ссылке)";
+      if (next === "CORE") sidebarUpgradeBtn.textContent = referralDiscount > 0 ? "Открыть CORE (−25% по реф-ссылке)" : "Открыть CORE";
+      else if (next === "BOOST") sidebarUpgradeBtn.textContent = referralDiscount > 0 ? "Оформить PRO (−25% по реф-ссылке)" : "Оформить PRO";
+      else sidebarUpgradeBtn.textContent = "Открыть VIP";
     }
   }
   if (upgradeCoreBtn) {
     if (state.subscription === "DEMO") {
       upgradeCoreBtn.disabled = false;
-      upgradeCoreBtn.textContent = pendingTier === "CORE" ? "Ожидается оплата CORE" : "Открыть CORE · −25% по реф-ссылке";
+      upgradeCoreBtn.textContent =
+        pendingTier === "CORE" ? "Ожидается оплата CORE" : referralDiscount > 0 ? "Открыть CORE · −25% по реф-ссылке" : "Открыть CORE";
     } else if (state.subscription === "CORE") {
       upgradeCoreBtn.disabled = true;
       upgradeCoreBtn.textContent = "Текущий уровень";
@@ -1472,13 +1551,13 @@ function render() {
     if (state.subscription === "DEMO" || state.subscription === "CORE") {
       upgradeBoostBtn.disabled = false;
       upgradeBoostBtn.textContent =
-        pendingTier === "BOOST" ? "Ожидается оплата BOOST" : "Открыть BOOST · −25% по реф-ссылке";
+        pendingTier === "BOOST" ? "Ожидается оплата PRO" : referralDiscount > 0 ? "Открыть PRO · −25% по реф-ссылке" : "Открыть PRO";
     } else if (state.subscription === "BOOST") {
       upgradeBoostBtn.disabled = true;
       upgradeBoostBtn.textContent = "Текущий уровень";
     } else {
       upgradeBoostBtn.disabled = true;
-      upgradeBoostBtn.textContent = "Включено в ELITE";
+      upgradeBoostBtn.textContent = "Включено в VIP";
     }
   }
   if (upgradeEliteBtn) {
@@ -1487,7 +1566,7 @@ function render() {
       upgradeEliteBtn.textContent = "Текущий уровень";
     } else {
       upgradeEliteBtn.disabled = false;
-      upgradeEliteBtn.textContent = pendingTier === "ELITE" ? "Ожидается оплата ELITE" : "Купить ELITE · −25% по реф-ссылке";
+      upgradeEliteBtn.textContent = pendingTier === "ELITE" ? "Ожидается оплата VIP" : "Открыть VIP";
     }
   }
 
@@ -1498,13 +1577,13 @@ function render() {
     if (pendingTier) {
       subscriptionPending.classList.remove("hidden");
       if (!canVerify) {
-        subscriptionPendingText.textContent = `Открыта оплата ${pendingTier}. Для авто-проверки открой Mini App из Telegram.`;
+        subscriptionPendingText.textContent = `Открыта оплата ${tierLabel(pendingTier)}. Для авто-проверки открой Mini App из Telegram.`;
       } else if (!backendReachable) {
-        subscriptionPendingText.textContent = `Открыта оплата ${pendingTier}. Сервер проверки временно недоступен. Нажми «Проверить оплату».`;
+        subscriptionPendingText.textContent = `Открыта оплата ${tierLabel(pendingTier)}. Сервер проверки временно недоступен. Нажми «Проверить оплату».`;
       } else {
-        subscriptionPendingText.textContent = `Открыта оплата ${pendingTier}. После оплаты нажми «Проверить оплату».`;
+        subscriptionPendingText.textContent = `Открыта оплата ${tierLabel(pendingTier)}. После оплаты нажми «Проверить оплату».`;
       }
-      subscriptionCheckBtn.textContent = `Проверить оплату ${pendingTier}`;
+      subscriptionCheckBtn.textContent = `Проверить оплату ${tierLabel(pendingTier)}`;
       subscriptionCheckBtn.disabled = !canVerify;
     } else {
       subscriptionPending.classList.add("hidden");
@@ -1534,23 +1613,58 @@ function render() {
   if (homeBonusDetails) homeBonusDetails.textContent = homeBonus.textContent;
   if (homeDetails) homeDetails.classList.toggle("hidden", !state.homeDetailsOpen);
   if (homeDetailsToggle) {
-    homeDetailsToggle.textContent = state.homeDetailsOpen ? "Скрыть показатели" : "Показатели системы";
+    homeDetailsToggle.textContent = state.homeDetailsOpen ? "Скрыть показатели" : "Показатели дня";
   }
   if (homeAccessRule) homeAccessRule.textContent = missionAccessNote(subscriptionInfo);
+  const quickDone = quickWinDoneCount();
+  if (quickWinChip) quickWinChip.textContent = `${quickDone} / 3`;
+  if (quickWinNote) {
+    if (quickDone === 3) {
+      quickWinNote.textContent = state.quickWin.bonusGranted
+        ? "Quick Win закрыт: бонус «Анти-срыв» активирован."
+        : "Quick Win закрыт. Бонус будет начислен после сохранения.";
+    } else {
+      quickWinNote.textContent = `Закрой ${3 - quickDone} из 3 шагов, чтобы закрепить старт и снизить риск срыва.`;
+    }
+  }
+  if (quickWinButtons && quickWinButtons.length) {
+    quickWinButtons.forEach((btn) => {
+      const day = Number(btn.dataset.quickwin);
+      if (!day) return;
+      const key = `day${day}`;
+      const done = Boolean(state.quickWin[key]);
+      const locked = !done && state.level < day;
+      btn.disabled = locked || done || subscriptionInfo.expired;
+      btn.classList.toggle("is-done", done);
+      if (done) {
+        btn.setAttribute("aria-label", `День ${day}: выполнено`);
+      } else if (locked) {
+        btn.setAttribute("aria-label", `День ${day}: откроется позже`);
+      } else {
+        btn.setAttribute("aria-label", `День ${day}: доступно`);
+      }
+    });
+  }
   if (homePaywallBlock) homePaywallBlock.classList.toggle("hidden", !demoFinished);
   const sideQuest = sideQuestForLevel(state.level);
   if (sideQuestNameEl) sideQuestNameEl.textContent = sideQuest.name;
   if (sideQuestNoteEl) sideQuestNoteEl.textContent = sideQuest.note;
-  if (sideQuestRewardEl) sideQuestRewardEl.textContent = state.sideQuestDone ? state.modifier.toUpperCase() : "МОДИФИКАТОР НЕДЕЛИ";
+  if (sideQuestRewardEl) sideQuestRewardEl.textContent = state.sideQuestDone ? state.modifier.toUpperCase() : "БОНУС НЕДЕЛИ";
 
   missionPanelTitle.textContent = `Миссия: ${missionName}`;
   if (missionAvailability) missionAvailability.textContent = missionAccessNote(subscriptionInfo);
+  if (missionOpenVideoBtn) {
+    const openBlocked = subscriptionInfo.expired || cycleComplete || demoFinished || state.currentLevelPassed;
+    missionOpenVideoBtn.disabled = openBlocked;
+    missionOpenVideoBtn.classList.toggle("hidden", openBlocked);
+    missionOpenVideoBtn.textContent = missionInProgress ? "Открыть тренировку ещё раз" : "Открыть тренировку";
+  }
   if (missionStartBtn) {
     if (demoFinished) {
       missionStartBtn.disabled = false;
       missionStartBtn.textContent = "Демо завершено — открыть тарифы";
     } else {
-      missionStartBtn.disabled = missionBlocked;
+      missionStartBtn.disabled = missionBlocked && !missionInProgress;
     }
     if (subscriptionInfo.expired) {
       missionStartBtn.textContent = "Подписка завершена";
@@ -1560,6 +1674,8 @@ function render() {
       missionStartBtn.textContent = "Демо завершено — открыть тарифы";
     } else if (state.currentLevelPassed) {
       missionStartBtn.textContent = "Уровень на сегодня пройден";
+    } else if (missionInProgress) {
+      missionStartBtn.textContent = "Подтвердить завершение";
     } else {
       missionStartBtn.textContent = "Запустить миссию";
     }
@@ -1576,7 +1692,7 @@ function render() {
   } else {
     setProgressRingValue(progressValue);
   }
-  progressSyncSeries.textContent = `Синхронизация: ${state.syncSeries}`;
+  progressSyncSeries.textContent = `Подряд без пропусков: ${state.syncSeries}`;
   progressChips.textContent = String(state.chips);
   if (state.subscription === "DEMO") {
     const left = demoLevelsLeft();
@@ -1589,16 +1705,23 @@ function render() {
       .slice(-6)
       .reverse()
       .map((entry) => {
-        const title = entry.boss ? `Босс · уровень ${pad2(entry.level)} пройден` : `Уровень ${pad2(entry.level)} пройден`;
+        const title = entry.boss ? `Босс · Уровень ${pad2(entry.level)}` : `Уровень ${pad2(entry.level)}`;
+        const status = entry.boss ? "Босс закрыт" : "Уровень пройден";
+        const completedAt = formatProgressLogTime(entry.completedAt);
         const reward = entry.boss ? 300 : 120;
-        return `<div class="progress-log__item"><div class="progress-log__title">${title}</div><div class="progress-log__reward">Награда: +${reward} чипов</div></div>`;
+        return `<div class="progress-log__item"><div class="progress-log__title">${title}</div><div class="progress-log__status">${status}${completedAt ? ` · ${completedAt}` : ""}</div><div class="progress-log__reward">Награда: +${reward} чипов</div></div>`;
       })
       .join("");
     progressLog.innerHTML =
       items ||
-      `<div class="progress-log__item"><div class="progress-log__title">Пока нет закрытых уровней</div><div class="progress-log__reward">Пройди миссию, чтобы заполнить ленту прогресса</div></div>`;
+      `<div class="progress-log__item"><div class="progress-log__title">Пока нет закрытых уровней</div><div class="progress-log__status">Здесь появятся последние выполненные уровни</div><div class="progress-log__reward">Пройди миссию, чтобы заполнить ленту прогресса</div></div>`;
   }
   if (progressPaywallBlock) progressPaywallBlock.classList.toggle("hidden", !demoFinished);
+  const weekly = weeklyScorecardData();
+  if (scorecardDiscipline) scorecardDiscipline.textContent = `${weekly.discipline}%`;
+  if (scorecardMissions) scorecardMissions.textContent = String(weekly.missions);
+  if (scorecardStreak) scorecardStreak.textContent = String(weekly.streak);
+  if (scorecardForecast) scorecardForecast.textContent = weekly.forecast;
   if (refLink) refLink.textContent = getReferralLink();
 
   shopBalance.textContent = `ЧИПЫ ${state.chips}`;
@@ -1635,7 +1758,7 @@ function render() {
   settingsWindowVal.textContent = state.window;
   if (settingsEffectsVal) settingsEffectsVal.textContent = `${metrics.hydrationMl} мл / ${HYDRATION_TARGET_ML} мл`;
 
-  sideQuestStatus.textContent = state.sideQuestDone ? `Статус: выполнено · ${state.modifier}` : "Статус: не выполнено";
+  sideQuestStatus.textContent = state.sideQuestDone ? `Статус: выполнено · бонус ${state.modifier}` : "Статус: не выполнено";
   sideQuestBtn.textContent = state.sideQuestDone ? "Допзадание закрыто" : "Отметить выполнение";
   sideQuestBtn.disabled = state.sideQuestDone || subscriptionInfo.expired || demoFinished;
 
@@ -1681,19 +1804,40 @@ function syncShopButtons() {
 }
 
 function resetMission() {
+  missionInProgress = false;
+  missionWatchedSeconds = 0;
+  missionHiddenStartedAt = null;
   missionRemaining = MISSION_TOTAL_SECONDS;
+  if (missionFlowHint) {
+    missionFlowHint.textContent = "Завершение автоматически после 15 минут реального просмотра видео.";
+  }
   updateMissionProgressUI();
 }
 
-function stopMissionTimer() {
-  if (missionInterval) {
-    clearInterval(missionInterval);
-    missionInterval = null;
+function updateMissionWatchFromHiddenTime() {
+  if (!missionInProgress || !missionHiddenStartedAt) return;
+  const elapsed = Math.max(0, Math.floor((Date.now() - missionHiddenStartedAt) / 1000));
+  missionHiddenStartedAt = null;
+  if (!elapsed) return;
+  missionWatchedSeconds = clamp(missionWatchedSeconds + elapsed, 0, MISSION_TOTAL_SECONDS);
+  missionRemaining = clamp(MISSION_TOTAL_SECONDS - missionWatchedSeconds, 0, MISSION_TOTAL_SECONDS);
+  updateMissionProgressUI();
+}
+
+function openMissionVideo() {
+  const url = missionVideoUrlByLevel(state.level);
+  openExternalLink(url);
+}
+
+function cancelMissionProgress(message = "") {
+  if (!missionInProgress) return;
+  resetMission();
+  if (message && missionFlowHint) {
+    missionFlowHint.textContent = message;
   }
 }
 
 async function startMissionTimer() {
-  if (missionInterval) return;
   const subscriptionInfo = getSubscriptionInfo();
   if (isDemoFinished()) {
     openSubscriptionPaywall();
@@ -1713,18 +1857,54 @@ async function startMissionTimer() {
     }
     return;
   }
-  missionInterval = setInterval(() => {
-    missionRemaining = clamp(missionRemaining - DEMO_SECONDS_STEP, 0, MISSION_TOTAL_SECONDS);
+
+  if (!missionInProgress) {
+    missionInProgress = true;
+    missionWatchedSeconds = 0;
+    missionHiddenStartedAt = null;
+    missionRemaining = MISSION_TOTAL_SECONDS;
     updateMissionProgressUI();
-    if (missionRemaining === 0) {
-      completeMission();
+    if (missionFlowHint) {
+      missionFlowHint.textContent =
+        "Открой тренировку, досмотри и вернись сюда. Если выйдешь раньше — миссия начнётся заново.";
     }
-  }, DEMO_TICK_MS);
+    render();
+    openMissionVideo();
+    return;
+  }
+
+  updateMissionWatchFromHiddenTime();
+  if (missionWatchedSeconds < MISSION_TOTAL_SECONDS) {
+    if (missionFlowHint) {
+      missionFlowHint.textContent =
+        `Пока не завершено. Осталось ${formatTimer(MISSION_TOTAL_SECONDS - missionWatchedSeconds)} реального просмотра.`;
+    }
+    return;
+  }
+
+  completeMission();
+}
+
+function handleMissionOpenVideo() {
+  const subscriptionInfo = getSubscriptionInfo();
+  if (subscriptionInfo.expired || isDemoFinished() || state.currentLevelPassed) return;
+
+  if (!missionInProgress) {
+    missionInProgress = true;
+    missionWatchedSeconds = 0;
+    missionHiddenStartedAt = null;
+    missionRemaining = MISSION_TOTAL_SECONDS;
+    updateMissionProgressUI();
+    if (missionFlowHint) {
+      missionFlowHint.textContent =
+        "Открой тренировку, досмотри и вернись сюда. Если выйдешь раньше — миссия начнётся заново.";
+    }
+    render();
+  }
+  openMissionVideo();
 }
 
 async function completeMission() {
-  stopMissionTimer();
-
   const currentLevel = state.level;
   if (state.currentLevelPassed) return;
   const boss = isBossLevel(currentLevel);
@@ -1741,7 +1921,15 @@ async function completeMission() {
   const levelCap = state.subscription === "DEMO" ? DEMO_LEVEL_CAP : 30;
   state.nextUnlockAt = currentLevel < levelCap ? getNextUnlockDate().toISOString() : null;
   state.sideQuestDone = false;
-  state.completedHistory = [...state.completedHistory, { level: currentLevel, boss, reward: mainReward }].slice(-8);
+  state.completedHistory = [...state.completedHistory, { level: currentLevel, boss, reward: mainReward, completedAt: nowIso() }].slice(-8);
+  if (currentLevel >= 1 && currentLevel <= 3) {
+    const key = `day${currentLevel}`;
+    state.quickWin[key] = true;
+  }
+  if (quickWinDoneCount() === 3 && !state.quickWin.bonusGranted) {
+    state.quickWin.bonusGranted = true;
+    state.chips += 250;
+  }
 
   saveState();
   render();
@@ -1826,9 +2014,9 @@ async function upgradeSubscription(target) {
   closeDemoPaywall();
   if (shopMessage) {
     if (state.referralDiscountPercent > 0) {
-      shopMessage.textContent = `Оплата ${target} открыта в Tribute. Скидка ${state.referralDiscountPercent}% активна. После оплаты нажми «Проверить оплату».`;
+      shopMessage.textContent = `Оплата ${tierLabel(target)} открыта в Tribute. Скидка ${state.referralDiscountPercent}% активна. После оплаты нажми «Проверить оплату».`;
     } else {
-      shopMessage.textContent = `Оплата ${target} открыта в Tribute. После оплаты нажми «Проверить оплату».`;
+      shopMessage.textContent = `Оплата ${tierLabel(target)} открыта в Tribute. После оплаты нажми «Проверить оплату».`;
     }
   }
 }
@@ -1848,6 +2036,23 @@ function activateSideQuest() {
   render();
 }
 
+function markQuickWinDay(day) {
+  const key = `day${day}`;
+  if (!["day1", "day2", "day3"].includes(key)) return;
+  if (state.quickWin[key]) return;
+  if (state.level < day) return;
+
+  state.quickWin[key] = true;
+  const done = quickWinDoneCount();
+  if (done === 3 && !state.quickWin.bonusGranted) {
+    state.quickWin.bonusGranted = true;
+    state.chips += 250;
+    if (shopMessage) shopMessage.textContent = "72H QUICK WIN закрыт. Начислено +250 чипов.";
+  }
+  saveState();
+  render();
+}
+
 function updateHydration(value) {
   state.quick.hydrationMl = clamp(Math.round(Number(value)), 0, HYDRATION_TARGET_ML);
   saveState();
@@ -1861,7 +2066,7 @@ function toggleReminders() {
 }
 
 function resetCurrentMission() {
-  stopMissionTimer();
+  cancelMissionProgress();
   resetMission();
   shopMessage.textContent = "Миссия сброшена.";
 }
@@ -1871,7 +2076,8 @@ function syncBodyLock() {
   const paywallOpen = demoPaywall && !demoPaywall.classList.contains("hidden");
   const drawerOpen = mobileDrawer && !mobileDrawer.classList.contains("hidden");
   const ecosystemOpen = ecosystemModal && !ecosystemModal.classList.contains("hidden");
-  document.body.classList.toggle("modal-open", Boolean(modulesOpen || paywallOpen || drawerOpen || ecosystemOpen));
+  const sosOpen = sosModal && !sosModal.classList.contains("hidden");
+  document.body.classList.toggle("modal-open", Boolean(modulesOpen || paywallOpen || drawerOpen || ecosystemOpen || sosOpen));
 }
 
 function openModulesModal() {
@@ -1913,6 +2119,20 @@ function closeEcosystemModal() {
   if (!ecosystemModal) return;
   ecosystemModal.classList.add("hidden");
   ecosystemModal.setAttribute("aria-hidden", "true");
+  syncBodyLock();
+}
+
+function openSosModal() {
+  if (!sosModal) return;
+  sosModal.classList.remove("hidden");
+  sosModal.setAttribute("aria-hidden", "false");
+  syncBodyLock();
+}
+
+function closeSosModal() {
+  if (!sosModal) return;
+  sosModal.classList.add("hidden");
+  sosModal.setAttribute("aria-hidden", "true");
   syncBodyLock();
 }
 
@@ -2320,6 +2540,13 @@ if (!motifReady) {
     }
     setActiveScreen("mission");
   });
+  if (sosBtn) {
+    sosBtn.addEventListener("click", () => {
+      playUiClick("ghost");
+      triggerHaptic("heavy");
+      openSosModal();
+    });
+  }
   if (homeDetailsToggle) {
     homeDetailsToggle.addEventListener("click", () => {
       playUiClick("ghost");
@@ -2370,7 +2597,7 @@ if (!motifReady) {
         }
         if (shopMessage) {
           shopMessage.textContent =
-            "Ссылка скопирована. Другу — скидка 25% на первый платёж, тебе — месяц CORE после его первой оплаты.";
+            "Ссылка скопирована. Другу — скидка 25% на CORE/PRO, тебе — месяц CORE после его первой оплаты.";
         }
       } catch {
         if (shopMessage) shopMessage.textContent = "Не удалось скопировать ссылку. Поделись вручную.";
@@ -2383,7 +2610,7 @@ if (!motifReady) {
       triggerHaptic("heavy");
       if (shopMessage) {
         shopMessage.textContent =
-          "Отправляй ссылку: другу — скидка 25% на первый платёж, тебе — месяц CORE после его первой оплаты.";
+          "Отправляй ссылку: другу — скидка 25% на CORE/PRO, тебе — месяц CORE после его первой оплаты.";
       }
       await shareProgress();
     });
@@ -2476,6 +2703,24 @@ if (!motifReady) {
       openSupportChat("Хочу в ранний доступ BE MORE HUB.");
     });
   }
+  if (sosModalClose) {
+    sosModalClose.addEventListener("click", () => {
+      playUiClick("ghost");
+      triggerHaptic("soft");
+      closeSosModal();
+    });
+  }
+  if (sosModalBackdrop) {
+    sosModalBackdrop.addEventListener("click", closeSosModal);
+  }
+  if (sosOpenSupport) {
+    sosOpenSupport.addEventListener("click", () => {
+      playUiClick("primary");
+      triggerHaptic("heavy");
+      closeSosModal();
+      openSupportChat("SOS: тяга к срыву. Нужен быстрый протокол восстановления.");
+    });
+  }
   if (mobileDrawerClose) {
     mobileDrawerClose.addEventListener("click", () => {
       playUiClick("ghost");
@@ -2491,10 +2736,19 @@ if (!motifReady) {
     closeModulesModal();
     closeDemoPaywall();
     closeEcosystemModal();
+    closeSosModal();
     closeMobileDrawer();
     if (tourActive) finishTour(true);
   });
   document.addEventListener("visibilitychange", () => {
+    if (missionInProgress) {
+      if (document.visibilityState === "hidden") {
+        missionHiddenStartedAt = Date.now();
+      } else if (document.visibilityState === "visible") {
+        updateMissionWatchFromHiddenTime();
+        render();
+      }
+    }
     if (document.visibilityState === "visible") {
       checkAccessStatus({ manual: false });
     }
@@ -2533,6 +2787,13 @@ if (!motifReady) {
     triggerHaptic("heavy");
     startMissionTimer();
   });
+  if (missionOpenVideoBtn) {
+    missionOpenVideoBtn.addEventListener("click", () => {
+      playUiClick("ghost");
+      triggerHaptic("soft");
+      handleMissionOpenVideo();
+    });
+  }
   resultNextBtn.addEventListener("click", () => {
     playUiClick("primary");
     triggerHaptic("soft");
@@ -2548,6 +2809,17 @@ if (!motifReady) {
     triggerHaptic("soft");
     activateSideQuest();
   });
+  if (quickWinButtons && quickWinButtons.length) {
+    quickWinButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        const day = Number(button.dataset.quickwin);
+        if (!day) return;
+        playUiClick("primary");
+        triggerHaptic("soft");
+        markQuickWinDay(day);
+      });
+    });
+  }
   shopButtons.forEach((button) =>
     button.addEventListener("click", (event) => {
       playUiClick("upgrade");

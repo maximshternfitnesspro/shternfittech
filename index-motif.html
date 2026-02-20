@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Russo+One&display=swap" rel="stylesheet" />
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link rel="stylesheet" href="styles-motif.css?v=20260219c" />
+    <link rel="stylesheet" href="styles-motif.css?v=20260220a" />
   </head>
   <body>
     <div class="global-overlay" aria-hidden="true"></div>
@@ -55,7 +55,7 @@
               </div>
             </div>
             <div class="onboarding__story-item">
-              <span class="onboarding__story-icon onboarding__story-icon--life" aria-hidden="true">⚡</span>
+              <span class="onboarding__story-icon onboarding__story-icon--life" aria-hidden="true">⟡</span>
               <div class="onboarding__story-copy">
                 <div class="onboarding__story-label">В ЖИЗНИ</div>
                 <p class="onboarding__story-text">Твоя форма улучшается синхронно с игрой.</p>
@@ -142,9 +142,9 @@
             <div class="plan-badge__meta" id="sidebar-subscription-term">Осталось 30 дней</div>
             <div class="plan-badge__meta">Следующий апгрейд</div>
             <div class="plan-badge__benefits" id="sidebar-upgrade-benefits">
-              BOOST: всё, что есть в CORE и: разборы куратора, закрытая группа, приоритетная поддержка.
+              PRO: всё из CORE + разборы куратора, закрытая группа, приоритетная поддержка.
             </div>
-            <button class="btn btn--ghost plan-badge__btn" id="sidebar-upgrade-btn">Оформить BOOST (−25% по реф-ссылке)</button>
+            <button class="btn btn--ghost plan-badge__btn" id="sidebar-upgrade-btn">Оформить PRO (−25% по реф-ссылке)</button>
           </div>
         </div>
       </aside>
@@ -166,6 +166,7 @@
               </div>
               <div class="cta-stack">
                 <button class="btn btn--primary" id="cta-start">Запустить миссию</button>
+                <button class="btn btn--ghost" id="sos-btn">SOS: тянет на срыв</button>
               </div>
               <div class="home-hudline">
                 <div class="home-hudline__item">
@@ -181,8 +182,42 @@
               <div class="metric__label" id="home-access-rule">
                 Лимит: 1 уровень в день. Следующий уровень открывается на следующий день в 07:00 МСК.
               </div>
+              <div class="quickwin" id="quickwin-panel">
+                <div class="quickwin__header">
+                  <div class="quickwin__title">72H QUICK WIN</div>
+                  <div class="chip chip--cyan" id="quickwin-chip">0 / 3</div>
+                </div>
+                <div class="quickwin__subtitle">Первые 3 дня, чтобы получить ощутимый старт.</div>
+                <div class="quickwin__grid">
+                  <button class="quickwin__task" id="quickwin-1" type="button" data-quickwin="1">
+                    <span class="quickwin__day">ДЕНЬ 1</span>
+                    <span class="quickwin__task-title">Анти-отёк старт</span>
+                    <span class="quickwin__task-note">Вода + шаги + миссия</span>
+                  </button>
+                  <button class="quickwin__task" id="quickwin-2" type="button" data-quickwin="2">
+                    <span class="quickwin__day">ДЕНЬ 2</span>
+                    <span class="quickwin__task-title">Анти-зажор протокол</span>
+                    <span class="quickwin__task-note">Питание A/B/C + правило дня</span>
+                  </button>
+                  <button class="quickwin__task" id="quickwin-3" type="button" data-quickwin="3">
+                    <span class="quickwin__day">ДЕНЬ 3</span>
+                    <span class="quickwin__task-title">Сравнение с Д0</span>
+                    <span class="quickwin__task-note">Вес/талия/фото + вывод</span>
+                  </button>
+                </div>
+                <div class="quickwin__footer" id="quickwin-note">Закрой 3/3 и открой бонус «Анти-срыв».</div>
+              </div>
+              <div class="milestone-strip">
+                <div class="milestone-strip__title">Контрольные точки</div>
+                <div class="milestone-strip__items">
+                  <div class="milestone-strip__item"><span>D3</span> Легкость и контроль тяги</div>
+                  <div class="milestone-strip__item"><span>D7</span> Режим закрепился</div>
+                  <div class="milestone-strip__item"><span>D14</span> Видимый прогресс</div>
+                  <div class="milestone-strip__item"><span>D30</span> Закрыт цикл</div>
+                </div>
+              </div>
               <button class="btn btn--ghost home-details-toggle" id="home-details-toggle" type="button">
-                Показатели системы
+                Показатели дня
               </button>
               <div class="warning-block hidden" id="home-paywall-block">
                 <div class="warning-block__title">Демо завершено: 3/3</div>
@@ -237,7 +272,7 @@
                   </div>
                 </div>
                 <div class="sidequest-bonus">
-                  Награда: <strong id="sidequest-reward">МОДИФИКАТОР НЕДЕЛИ</strong>
+                  Награда: <strong id="sidequest-reward">БОНУС НЕДЕЛИ</strong>
                 </div>
                 <div class="cta-row">
                   <button class="btn btn--ghost" id="sidequest-btn">Отметить выполнение</button>
@@ -263,7 +298,8 @@
                 </div>
               </div>
               <button class="btn btn--primary mission-main-btn" id="mission-start">Запустить миссию</button>
-              <div class="metric__label">Завершение автоматически после просмотра до конца.</div>
+              <button class="btn btn--ghost mission-open-video-btn hidden" id="mission-open-video">Открыть тренировку</button>
+              <div class="metric__label" id="mission-flow-hint">Завершение автоматически после просмотра до конца.</div>
               <div class="metric__label" id="mission-availability">
                 Доступен 1 уровень на сегодня. После прохождения новый откроется завтра в 07:00 МСК.
               </div>
@@ -313,8 +349,8 @@
                   <div class="progress__value" id="progress-level">3/30</div>
                 </div>
                 <div class="progress__meta">
-                  <div class="metric__value" id="progress-sync-series">Синхронизация: 2</div>
-                  <div class="metric__label">Подряд в бонусном окне.</div>
+                  <div class="metric__value" id="progress-sync-series">Подряд без пропусков: 2</div>
+                  <div class="metric__label">Сколько уровней подряд ты закрыл в своём окне миссии.</div>
                 </div>
               </div>
               <div class="metrics">
@@ -327,18 +363,40 @@
                   <div class="metric__value" id="progress-boss">4 уровней</div>
                 </div>
               </div>
+              <div class="scorecard" id="scorecard">
+                <div class="scorecard__head">
+                  <div class="scorecard__title">Scorecard недели</div>
+                  <div class="chip chip--pink" id="scorecard-discipline">0%</div>
+                </div>
+                <div class="scorecard__grid">
+                  <div class="scorecard__item">
+                    <div class="scorecard__label">Миссий за 7 дней</div>
+                    <div class="scorecard__value" id="scorecard-missions">0</div>
+                  </div>
+                  <div class="scorecard__item">
+                    <div class="scorecard__label">Текущий стрик</div>
+                    <div class="scorecard__value" id="scorecard-streak">0</div>
+                  </div>
+                  <div class="scorecard__item">
+                    <div class="scorecard__label">Прогноз до босса</div>
+                    <div class="scorecard__value" id="scorecard-forecast">—</div>
+                  </div>
+                </div>
+              </div>
               <div class="referral-card">
                 <div class="referral-card__title">Реферальная программа</div>
                 <div class="referral-card__text" id="referral-copy-main">
-                  Друг получает скидку 25% на первый платёж по твоей ссылке. Ты получаешь 1 месяц CORE после его первой
-                  успешной оплаты.
+                  Йоу! Ты видел это!? ПОХУДЕНИЕ в режиме RPG! Я уже активировал персональный ЧИТ-КОД НА СУШКУ и готовлюсь к лету по
+                  полной без лишнего стресса. Присоединяйся по моей ссылке и будем проходить вместе!
                 </div>
                 <div class="referral-card__link" id="ref-link">https://t.me/cheatcodewith_bot</div>
                 <div class="cta-row referral-card__actions">
                   <button class="btn btn--ghost" id="ref-copy-btn">Скопировать</button>
                   <button class="btn btn--primary" id="progress-share-btn">Поделиться</button>
                 </div>
-                <div class="referral-card__note" id="referral-copy-note">Скидка 25% действует для приглашённого. Бонус месяца — после первой оплаты друга.</div>
+                <div class="referral-card__note" id="referral-copy-note">
+                  По ссылке друг получает скидку 25% на CORE/PRO. После его первой оплаты тебе начисляется 1 месяц CORE.
+                </div>
               </div>
               <div class="progress-log" id="progress-log"></div>
               <div class="warning-block hidden" id="progress-paywall-block">
@@ -482,7 +540,24 @@
                 <span class="sub-highlight">ТЕКУЩИЙ УРОВЕНЬ</span>: CORE.
                 <span class="sub-highlight">МОДУЛЬ ТРЕНИРОВОК</span>: ПЕРЕЗАПУСК.
               </div>
-              <div class="metric__label" id="subscription-ref-note">РЕФ-СКИДКА: 25% на первый платёж по приглашению.</div>
+              <div class="metric__label" id="subscription-ref-note">РЕФ-СКИДКА: 25% на первый платёж CORE/PRO по приглашению.</div>
+              <div class="proof-strip">
+                <div class="proof-strip__title">Почему это работает</div>
+                <div class="proof-strip__items">
+                  <div class="proof-strip__item">
+                    <strong>Кейс #1</strong>
+                    <span>−6 см в талии за 30 дней</span>
+                  </div>
+                  <div class="proof-strip__item">
+                    <strong>Кейс #2</strong>
+                    <span>−4.8 кг за 6 недель без зала</span>
+                  </div>
+                  <div class="proof-strip__item">
+                    <strong>Механика</strong>
+                    <span>1 уровень в день + контроль срыва</span>
+                  </div>
+                </div>
+              </div>
               <div class="pending-upgrade hidden" id="subscription-pending">
                 <div class="pending-upgrade__title">Ожидается оплата</div>
                 <div class="pending-upgrade__text" id="subscription-pending-text">
@@ -516,11 +591,11 @@
                   </ul>
                 </article>
                 <article class="sub-card">
-                  <div class="sub-card__title">BOOST</div>
+                  <div class="sub-card__title">PRO</div>
                   <div class="sub-card__desc">Для тех, кому нужна среда и страховка от ошибок.</div>
                   <div class="sub-card__term">3 490 ₽ / мес · 6 990 ₽ / 3 мес</div>
                   <div class="sub-card__sale">Реф-скидка 25% на первый платёж по приглашению</div>
-                  <button class="btn btn--ghost" id="upgrade-boost-btn">Открыть BOOST · −25% по реф-ссылке</button>
+                  <button class="btn btn--ghost" id="upgrade-boost-btn">Открыть PRO · −25% по реф-ссылке</button>
                   <div class="sub-card__inherit">Всё, что есть в CORE и:</div>
                   <div class="sub-card__divider"></div>
                   <ul class="sub-card__list">
@@ -532,12 +607,12 @@
                   </ul>
                 </article>
                 <article class="sub-card">
-                  <div class="sub-card__title">ELITE</div>
+                  <div class="sub-card__title">VIP</div>
                   <div class="sub-card__desc">Полный аутсорс дисциплины и гарантия возврата.</div>
                   <div class="sub-card__term">34 990 ₽ · разовая покупка</div>
-                  <div class="sub-card__sale">Реф-скидка 25% на первый платёж по приглашению</div>
-                  <button class="btn btn--ghost" id="upgrade-elite-btn">Купить ELITE · −25% по реф-ссылке</button>
-                  <div class="sub-card__inherit">Всё, что есть в BOOST и:</div>
+                  <div class="sub-card__sale">Разовая покупка. Без ежемесячного продления.</div>
+                  <button class="btn btn--ghost" id="upgrade-elite-btn">Открыть VIP</button>
+                  <div class="sub-card__inherit">Всё, что есть в PRO и:</div>
                   <div class="sub-card__divider"></div>
                   <ul class="sub-card__list">
                     <li>Делегируй контроль дисциплины мне лично (связь 24/7).</li>
@@ -649,7 +724,7 @@
         <div class="dock__panel">
           <div class="dock__title">Оперативный центр</div>
           <div class="dock-actions">
-            <button class="btn btn--primary" id="dock-share-btn">Пригласи друга: ему −25%, тебе месяц CORE</button>
+            <button class="btn btn--primary" id="dock-share-btn">Пригласи друга и получи бесплатно месяц</button>
             <button class="btn btn--ghost" id="dock-support-btn">Нашли ошибку? Сообщить</button>
             <button class="btn btn--ghost be-more-dock-btn" id="dock-ecosystem-btn">
               <span class="be-more-dock-btn__title">BE MORE HUB</span>
@@ -702,7 +777,7 @@
         <div class="modules-modal__grid">
           <article class="module-card module-card--active">
             <div class="module-card__title">Открой полный доступ</div>
-            <div class="module-card__desc">CORE / BOOST / ELITE — выбирай формат и продолжай цикл без остановки.</div>
+            <div class="module-card__desc">CORE / PRO / VIP — выбирай формат и продолжай цикл без остановки.</div>
             <button class="btn btn--primary" id="demo-paywall-open-btn">Открыть тарифы</button>
           </article>
         </div>
@@ -737,6 +812,34 @@
         </div>
         <div class="cta-row ecosystem-modal__actions">
           <button class="btn btn--primary" id="ecosystem-waitlist-btn">Записаться в ранний доступ</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modules-modal hidden" id="sos-modal" aria-hidden="true">
+      <div class="modules-modal__backdrop" id="sos-modal-backdrop"></div>
+      <div class="modules-modal__card">
+        <div class="modules-modal__head">
+          <div class="modules-modal__title">SOS: Протокол срыва</div>
+          <button class="btn btn--ghost modules-modal__close" id="sos-modal-close">Закрыть</button>
+        </div>
+        <div class="modules-modal__note">60 секунд, чтобы вернуть контроль и не сорваться.</div>
+        <div class="modules-modal__grid">
+          <article class="module-card">
+            <div class="module-card__title">Шаг 1</div>
+            <div class="module-card__desc">Выпей 300 мл воды прямо сейчас.</div>
+          </article>
+          <article class="module-card">
+            <div class="module-card__title">Шаг 2</div>
+            <div class="module-card__desc">Сделай 20 приседаний или 60 секунд планки.</div>
+          </article>
+          <article class="module-card">
+            <div class="module-card__title">Шаг 3</div>
+            <div class="module-card__desc">Открой поддержку и зафиксируй, что запустило тягу.</div>
+          </article>
+        </div>
+        <div class="cta-row ecosystem-modal__actions">
+          <button class="btn btn--primary" id="sos-open-support">Открыть поддержку</button>
         </div>
       </div>
     </div>
@@ -803,6 +906,6 @@
       </div>
     </div>
 
-    <script src="app.js?v=20260219c"></script>
+    <script src="app.js?v=20260220a"></script>
   </body>
 </html>
