@@ -1621,8 +1621,8 @@ function render() {
   if (quickWinNote) {
     if (quickDone === 3) {
       quickWinNote.textContent = state.quickWin.bonusGranted
-        ? "Quick Win закрыт: бонус «Анти-срыв» активирован."
-        : "Quick Win закрыт. Бонус будет начислен после сохранения.";
+        ? "Быстрый старт закрыт: бонус «Анти-срыв» активирован."
+        : "Быстрый старт закрыт. Бонус будет начислен после сохранения.";
     } else {
       quickWinNote.textContent = `Закрой ${3 - quickDone} из 3 шагов, чтобы закрепить старт и снизить риск срыва.`;
     }
@@ -2047,7 +2047,7 @@ function markQuickWinDay(day) {
   if (done === 3 && !state.quickWin.bonusGranted) {
     state.quickWin.bonusGranted = true;
     state.chips += 250;
-    if (shopMessage) shopMessage.textContent = "72H QUICK WIN закрыт. Начислено +250 чипов.";
+    if (shopMessage) shopMessage.textContent = "72Ч БЫСТРЫЙ СТАРТ закрыт. Начислено +250 чипов.";
   }
   saveState();
   render();
