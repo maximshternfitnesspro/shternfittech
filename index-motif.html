@@ -166,7 +166,7 @@
               </div>
               <div class="cta-stack">
                 <button class="btn btn--primary" id="cta-start">Запустить миссию</button>
-                <button class="btn btn--ghost" id="sos-btn">SOS: АНТИ-СРЫВ ГАЙД</button>
+                <button class="btn btn--ghost" id="sos-btn">SOS: АНТИ-СРЫВ</button>
               </div>
               <div class="home-hudline">
                 <div class="home-hudline__item">
@@ -248,6 +248,7 @@
                   </div>
                 </div>
                 <div class="cta-row">
+                  <button class="btn btn--ghost" id="home-window-change-btn">Изменить окно миссии</button>
                   <button class="btn btn--ghost btn--locked" id="module-switch-btn">Скоро: другие программы</button>
                 </div>
               </div>
@@ -637,6 +638,7 @@
                   <div class="setting-item__name">Окно миссии</div>
                   <div class="setting-item__desc">Текущее окно прохождения</div>
                   <div class="setting-item__val" id="settings-window-val">19:30–22:30</div>
+                  <button class="btn btn--ghost" id="settings-window-btn">Изменить окно</button>
                 </div>
                 <div class="setting-item">
                   <div class="setting-item__name">Сброс миссии</div>
@@ -721,7 +723,6 @@
             <button class="btn btn--ghost" id="dock-support-btn">Нашли ошибку? Сообщить</button>
             <button class="btn btn--ghost be-more-dock-btn" id="dock-ecosystem-btn">
               <span class="be-more-dock-btn__title">BE MORE HUB</span>
-              <span class="be-more-dock-btn__sub">Планнер задач + бот меню питания</span>
             </button>
           </div>
         </div>
@@ -816,23 +817,70 @@
           <div class="modules-modal__title">SOS: Анти-срыв</div>
           <button class="btn btn--ghost modules-modal__close" id="sos-modal-close">Закрыть</button>
         </div>
-        <div class="modules-modal__note">Короткий анти-срыв гайд: сделай шаги по порядку и верни контроль за 2–3 минуты.</div>
-        <div class="modules-modal__grid">
-          <article class="module-card">
-            <div class="module-card__title">Шаг 1 · Стоп-импульс</div>
-            <div class="module-card__desc">Выпей стакан воды и сделай 10 медленных вдохов.</div>
-          </article>
-          <article class="module-card">
-            <div class="module-card__title">Шаг 2 · Переключи тело</div>
-            <div class="module-card__desc">20 приседаний или 60 секунд планки, чтобы снять тягу.</div>
-          </article>
-          <article class="module-card">
-            <div class="module-card__title">Шаг 3 · Закрепи контроль</div>
-            <div class="module-card__desc">Напиши в поддержку: «тяга сейчас, нужен фокус».</div>
-          </article>
+        <div class="modules-modal__note">Тянет на сладкое или хаотичный перекус? Вот быстрые варианты на 5 минут:</div>
+        <div class="sos-food-list">
+          <div class="sos-food-item">
+            <span class="sos-food-item__icon">◈</span>
+            <div class="sos-food-item__text"><strong>Греческий йогурт 170 г + ягоды</strong> · 3 мин · ~180 ккал</div>
+          </div>
+          <div class="sos-food-item">
+            <span class="sos-food-item__icon">◉</span>
+            <div class="sos-food-item__text"><strong>Цельнозерновой тост + арахисовая паста</strong> · 4 мин · ~230 ккал</div>
+          </div>
+          <div class="sos-food-item">
+            <span class="sos-food-item__icon">◆</span>
+            <div class="sos-food-item__text"><strong>Омлет из 2 яиц + томаты</strong> · 7 мин · ~220 ккал</div>
+          </div>
+        </div>
+        <div class="sos-now">
+          <div class="sos-now__title">Твои действия СЕЙЧАС:</div>
+          <ul class="sos-now__list">
+            <li>выпей стакан воды</li>
+            <li>отожмись 10 раз / планка 1 мин</li>
+            <li>если голод не прошёл — открой подходящий гайд ниже</li>
+          </ul>
         </div>
         <div class="cta-row ecosystem-modal__actions">
-          <button class="btn btn--primary" id="sos-open-support">Открыть поддержку</button>
+          <button class="btn btn--primary" id="sos-open-support">НЕ ПОМОГЛО</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modules-modal hidden" id="sos-guides-modal" aria-hidden="true">
+      <div class="modules-modal__backdrop" id="sos-guides-modal-backdrop"></div>
+      <div class="modules-modal__card">
+        <div class="modules-modal__head">
+          <div class="modules-modal__title">Выбери 1 гайд</div>
+          <button class="btn btn--ghost modules-modal__close" id="sos-guides-modal-close">Закрыть</button>
+        </div>
+        <div class="modules-modal__note">Выбери то, что ближе к твоей ситуации прямо сейчас.</div>
+        <div class="modules-modal__grid">
+          <article class="module-card">
+            <div class="module-card__title">АНТИ-ЗАЖОР</div>
+            <div class="module-card__desc">Когда заедаешь стресс и скуку.</div>
+            <button class="btn btn--primary sos-guide-open" data-guide="anti-zazhor">Открыть PDF</button>
+          </article>
+          <article class="module-card">
+            <div class="module-card__title">НОЧНОЙ ДОЖОР</div>
+            <div class="module-card__desc">Когда накрывает поздним вечером или ночью.</div>
+            <button class="btn btn--primary sos-guide-open" data-guide="night-dozhor">Открыть PDF</button>
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="modules-modal hidden" id="window-modal" aria-hidden="true">
+      <div class="modules-modal__backdrop" id="window-modal-backdrop"></div>
+      <div class="modules-modal__card">
+        <div class="modules-modal__head">
+          <div class="modules-modal__title">Окно миссии</div>
+          <button class="btn btn--ghost modules-modal__close" id="window-modal-close">Закрыть</button>
+        </div>
+        <div class="modules-modal__note">Выбери 3 часа, когда тебе удобнее закрывать миссию.</div>
+        <div class="option-grid option-grid--windows window-modal__options">
+          <button class="option-btn" data-window="07:00–10:00">07:00–10:00</button>
+          <button class="option-btn" data-window="13:00–16:00">13:00–16:00</button>
+          <button class="option-btn" data-window="19:30–22:30">19:30–22:30</button>
         </div>
       </div>
     </div>

@@ -33,6 +33,11 @@ const TRIBUTE_PAYMENT_LINKS = {
   },
 };
 
+const SOS_GUIDE_LINKS = {
+  "anti-zazhor": "/assets/guides/anti-zazhor.pdf",
+  "night-dozhor": "/assets/guides/night-dozhor.pdf",
+};
+
 const DEFAULT_STATE = {
   level: 1,
   chips: 0,
@@ -185,6 +190,7 @@ const homeDetails = document.getElementById("home-details");
 const homeDetailsToggle = document.getElementById("home-details-toggle");
 const homeWindowDetails = document.getElementById("home-window-details");
 const homeBonusDetails = document.getElementById("home-bonus-details");
+const homeWindowChangeBtn = document.getElementById("home-window-change-btn");
 const sosBtn = document.getElementById("sos-btn");
 const quickWinChip = document.getElementById("quickwin-chip");
 const quickWinNote = document.getElementById("quickwin-note");
@@ -233,6 +239,7 @@ const missionAvailability = document.getElementById("mission-availability");
 
 const settingsRemindersBtn = document.getElementById("settings-reminders-btn");
 const settingsWindowVal = document.getElementById("settings-window-val");
+const settingsWindowBtn = document.getElementById("settings-window-btn");
 const settingsResetMission = document.getElementById("settings-reset-mission");
 const settingsTourBtn = document.getElementById("settings-tour-btn");
 const settingsSupportBtn = document.getElementById("settings-support-btn");
@@ -268,6 +275,13 @@ const sosModal = document.getElementById("sos-modal");
 const sosModalBackdrop = document.getElementById("sos-modal-backdrop");
 const sosModalClose = document.getElementById("sos-modal-close");
 const sosOpenSupport = document.getElementById("sos-open-support");
+const sosGuidesModal = document.getElementById("sos-guides-modal");
+const sosGuidesModalBackdrop = document.getElementById("sos-guides-modal-backdrop");
+const sosGuidesModalClose = document.getElementById("sos-guides-modal-close");
+const sosGuideButtons = document.querySelectorAll(".sos-guide-open");
+const windowModal = document.getElementById("window-modal");
+const windowModalBackdrop = document.getElementById("window-modal-backdrop");
+const windowModalClose = document.getElementById("window-modal-close");
 const proofCase1Btn = document.getElementById("proof-case-1");
 const proofCase2Btn = document.getElementById("proof-case-2");
 const proofModal = document.getElementById("proof-modal");
@@ -492,6 +506,12 @@ function closeProofModal() {
   proofModal.classList.add("hidden");
   proofModal.setAttribute("aria-hidden", "true");
   syncBodyLock();
+}
+
+function guideUrl(key) {
+  const relative = SOS_GUIDE_LINKS[key];
+  if (!relative) return "";
+  return new URL(relative, window.location.origin).toString();
 }
 
 function displayTierName(tier) {
@@ -1626,6 +1646,9 @@ function render() {
   homeBonus.textContent = "Осталось 2ч 14м";
   if (homeWindowDetails) homeWindowDetails.textContent = state.window;
   if (homeBonusDetails) homeBonusDetails.textContent = homeBonus.textContent;
+  windowButtons.forEach((button) => {
+    button.classList.toggle("active", button.dataset.window === state.window);
+  });
   if (homeDetails) homeDetails.classList.toggle("hidden", !state.homeDetailsOpen);
   if (homeDetailsToggle) {
     homeDetailsToggle.textContent = state.homeDetailsOpen ? "Скрыть показатели" : "Показатели дня";
@@ -2069,10 +2092,12 @@ function syncBodyLock() {
   const drawerOpen = mobileDrawer && !mobileDrawer.classList.contains("hidden");
   const ecosystemOpen = ecosystemModal && !ecosystemModal.classList.contains("hidden");
   const sosOpen = sosModal && !sosModal.classList.contains("hidden");
+  const sosGuidesOpen = sosGuidesModal && !sosGuidesModal.classList.contains("hidden");
+  const windowModalOpen = windowModal && !windowModal.classList.contains("hidden");
   const proofOpen = proofModal && !proofModal.classList.contains("hidden");
   document.body.classList.toggle(
     "modal-open",
-    Boolean(modulesOpen || paywallOpen || drawerOpen || ecosystemOpen || sosOpen || proofOpen),
+    Boolean(modulesOpen || paywallOpen || drawerOpen || ecosystemOpen || sosOpen || sosGuidesOpen || windowModalOpen || proofOpen),
   );
 }
 
@@ -2129,6 +2154,34 @@ function closeSosModal() {
   if (!sosModal) return;
   sosModal.classList.add("hidden");
   sosModal.setAttribute("aria-hidden", "true");
+  syncBodyLock();
+}
+
+function openSosGuidesModal() {
+  if (!sosGuidesModal) return;
+  sosGuidesModal.classList.remove("hidden");
+  sosGuidesModal.setAttribute("aria-hidden", "false");
+  syncBodyLock();
+}
+
+function closeSosGuidesModal() {
+  if (!sosGuidesModal) return;
+  sosGuidesModal.classList.add("hidden");
+  sosGuidesModal.setAttribute("aria-hidden", "true");
+  syncBodyLock();
+}
+
+function openWindowModal() {
+  if (!windowModal) return;
+  windowModal.classList.remove("hidden");
+  windowModal.setAttribute("aria-hidden", "false");
+  syncBodyLock();
+}
+
+function closeWindowModal() {
+  if (!windowModal) return;
+  windowModal.classList.add("hidden");
+  windowModal.setAttribute("aria-hidden", "true");
   syncBodyLock();
 }
 
@@ -2553,6 +2606,13 @@ if (!motifReady) {
       refreshTourMask();
     });
   }
+  if (homeWindowChangeBtn) {
+    homeWindowChangeBtn.addEventListener("click", () => {
+      playUiClick("ghost");
+      triggerHaptic("soft");
+      openWindowModal();
+    });
+  }
   if (homePaywallBtn) {
     homePaywallBtn.addEventListener("click", () => {
       playUiClick("upgrade");
@@ -2714,7 +2774,29 @@ if (!motifReady) {
       playUiClick("primary");
       triggerHaptic("heavy");
       closeSosModal();
-      openSupportChat("SOS: нужна помощь в анти-срыв режиме.");
+      openSosGuidesModal();
+    });
+  }
+  if (sosGuidesModalClose) {
+    sosGuidesModalClose.addEventListener("click", () => {
+      playUiClick("ghost");
+      triggerHaptic("soft");
+      closeSosGuidesModal();
+    });
+  }
+  if (sosGuidesModalBackdrop) {
+    sosGuidesModalBackdrop.addEventListener("click", closeSosGuidesModal);
+  }
+  if (sosGuideButtons && sosGuideButtons.length) {
+    sosGuideButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        playUiClick("primary");
+        triggerHaptic("heavy");
+        const key = button.dataset.guide;
+        const url = guideUrl(key);
+        if (url) openExternalLink(url);
+        closeSosGuidesModal();
+      });
     });
   }
   if (proofCase1Btn) {
@@ -2757,6 +2839,8 @@ if (!motifReady) {
     closeDemoPaywall();
     closeEcosystemModal();
     closeSosModal();
+    closeSosGuidesModal();
+    closeWindowModal();
     closeProofModal();
     closeMobileDrawer();
     if (tourActive) finishTour(true);
@@ -2919,6 +3003,23 @@ if (!motifReady) {
       openSupportChat(buildFeedbackContext());
     });
   }
+  if (settingsWindowBtn) {
+    settingsWindowBtn.addEventListener("click", () => {
+      playUiClick("ghost");
+      triggerHaptic("soft");
+      openWindowModal();
+    });
+  }
+  if (windowModalClose) {
+    windowModalClose.addEventListener("click", () => {
+      playUiClick("ghost");
+      triggerHaptic("soft");
+      closeWindowModal();
+    });
+  }
+  if (windowModalBackdrop) {
+    windowModalBackdrop.addEventListener("click", closeWindowModal);
+  }
   if (tourNextBtn) {
     tourNextBtn.addEventListener("click", () => {
       playUiClick("primary");
@@ -2986,6 +3087,10 @@ if (!motifReady) {
       state.window = button.dataset.window;
       saveState();
       render();
+      if (windowModal && !windowModal.classList.contains("hidden")) {
+        closeWindowModal();
+        if (shopMessage) shopMessage.textContent = `Окно миссии обновлено: ${state.window}.`;
+      }
     });
   });
 
