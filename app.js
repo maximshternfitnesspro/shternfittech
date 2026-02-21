@@ -3,7 +3,6 @@ const HYDRATION_TARGET_ML = 2500;
 const GLASS_ML = 250;
 const SUBSCRIPTION_DAYS = 30;
 const LEVEL_UNLOCK_HOUR = 7;
-const LEVEL_UNLOCK_TZ_LABEL = "МСК";
 const MOSCOW_OFFSET_MS = 3 * 60 * 60 * 1000;
 const PAYMENT_STATUS_POLL_MS = 15000;
 const ONBOARDING_VERSION = 7;
@@ -33,12 +32,6 @@ const TRIBUTE_PAYMENT_LINKS = {
     web: "https://web.tribute.tg/shop/pay/9f5939e0-1153-4e1e-99dc-d311b5ff8029",
   },
 };
-
-const MISSION_PLAYLISTS = [
-  "PLb4Ou10Gnnm_7XmnZy-b6E5linHwddGgD",
-  "PLb4Ou10Gnnm-J2XtqGNcu-ttchlXMPBuj",
-  "PLb4Ou10Gnnm8XbmNKhGQgrVWeX0fa3V-W",
-];
 
 const DEFAULT_STATE = {
   level: 1,
@@ -144,7 +137,6 @@ const resultNextBtn = document.getElementById("result-next");
 
 const missionStartBtn = document.getElementById("mission-start");
 const missionWatchFill = document.getElementById("mission-watch-fill");
-const missionOpenVideoBtn = document.getElementById("mission-open-video");
 const missionFlowHint = document.getElementById("mission-flow-hint");
 
 const shopButtons = document.querySelectorAll(".shop-buy");
@@ -276,6 +268,13 @@ const sosModal = document.getElementById("sos-modal");
 const sosModalBackdrop = document.getElementById("sos-modal-backdrop");
 const sosModalClose = document.getElementById("sos-modal-close");
 const sosOpenSupport = document.getElementById("sos-open-support");
+const proofCase1Btn = document.getElementById("proof-case-1");
+const proofCase2Btn = document.getElementById("proof-case-2");
+const proofModal = document.getElementById("proof-modal");
+const proofModalBackdrop = document.getElementById("proof-modal-backdrop");
+const proofModalClose = document.getElementById("proof-modal-close");
+const proofModalTitle = document.getElementById("proof-modal-title");
+const proofModalImage = document.getElementById("proof-modal-image");
 const tourOverlay = document.getElementById("tour-overlay");
 const tourShadeTop = document.getElementById("tour-shade-top");
 const tourShadeLeft = document.getElementById("tour-shade-left");
@@ -311,7 +310,7 @@ const MISSION_TOTAL_SECONDS = 15 * 60;
 let missionRemaining = MISSION_TOTAL_SECONDS;
 let missionInProgress = false;
 let missionWatchedSeconds = 0;
-let missionHiddenStartedAt = null;
+let missionTicker = null;
 let previewTimer = null;
 let sfxContext = null;
 let sfxUnlocked = false;
@@ -466,20 +465,38 @@ function buildShareText() {
   );
 }
 
+const PROOF_CASES = {
+  1: {
+    title: "Кейс #1 — результат до/после",
+    image: "/assets/cases/case-1.jpg",
+  },
+  2: {
+    title: "Кейс #2 — результат до/после",
+    image: "/assets/cases/case-2.jpg",
+  },
+};
+
+function openProofCase(caseId) {
+  if (!proofModal || !proofModalImage || !proofModalTitle) return;
+  const entry = PROOF_CASES[String(caseId)];
+  if (!entry) return;
+  proofModalTitle.textContent = entry.title;
+  proofModalImage.src = entry.image;
+  proofModal.classList.remove("hidden");
+  proofModal.setAttribute("aria-hidden", "false");
+  syncBodyLock();
+}
+
+function closeProofModal() {
+  if (!proofModal) return;
+  proofModal.classList.add("hidden");
+  proofModal.setAttribute("aria-hidden", "true");
+  syncBodyLock();
+}
+
 function displayTierName(tier) {
   const normalized = String(tier || "").toUpperCase();
   return TIER_DISPLAY[normalized] || normalized || "FREE";
-}
-
-function missionPlaylistByLevel(level) {
-  const safeLevel = clamp(Number(level) || 1, 1, 30);
-  const index = (safeLevel - 1) % MISSION_PLAYLISTS.length;
-  return MISSION_PLAYLISTS[index];
-}
-
-function missionVideoUrlByLevel(level) {
-  const playlist = missionPlaylistByLevel(level);
-  return `https://www.youtube.com/playlist?list=${encodeURIComponent(playlist)}`;
 }
 
 function getReferralLink() {
@@ -1124,7 +1141,7 @@ function formatUnlockDate(date) {
   const month = pad2(moscowDate.getUTCMonth() + 1);
   const hours = pad2(moscowDate.getUTCHours());
   const minutes = pad2(moscowDate.getUTCMinutes());
-  return `${day}.${month} в ${hours}:${minutes} ${LEVEL_UNLOCK_TZ_LABEL}`;
+  return `${day}.${month} в ${hours}:${minutes}`;
 }
 
 function formatProgressLogTime(value) {
@@ -1281,10 +1298,9 @@ function missionAccessNote(subscriptionInfo) {
     return "Цикл 01 завершен. Ожидай следующий цикл или новый модуль.";
   }
   if (state.currentLevelPassed && state.nextUnlockAt) {
-    const unlockAt = new Date(state.nextUnlockAt);
-    return `Сегодня уровень уже пройден. Следующий откроется ${formatUnlockDate(unlockAt)}.`;
+    return "1 день — 1 уровень. Прошел уровень? Следующий откроется завтра в 7:00 утра.";
   }
-  return `Доступен 1 уровень на сегодня. После прохождения новый откроется завтра в ${pad2(LEVEL_UNLOCK_HOUR)}:00 ${LEVEL_UNLOCK_TZ_LABEL}.`;
+  return "1 день — 1 уровень. Прошел уровень? Следующий откроется завтра в 7:00 утра.";
 }
 
 function clearPreviewMode() {
@@ -1490,9 +1506,9 @@ function render() {
   if (subscriptionCurrentChip) subscriptionCurrentChip.textContent = tierLabel(state.subscription);
   if (subscriptionHeadline) {
     if (state.subscription === "DEMO") {
-      subscriptionHeadline.innerHTML = `<span class="sub-highlight">ТЕКУЩИЙ УРОВЕНЬ</span>: FREE (${completedDemoLevels()}/${DEMO_LEVEL_CAP}). <span class="sub-highlight">МОДУЛЬ ТРЕНИРОВОК</span>: ${state.mode.toUpperCase()}.`;
+      subscriptionHeadline.innerHTML = `<span class="sub-highlight">ТЕКУЩИЙ УРОВЕНЬ</span>: FREE (${completedDemoLevels()}/${DEMO_LEVEL_CAP}).<br /><span class="sub-highlight">МОДУЛЬ ТРЕНИРОВОК</span>: ${state.mode.toUpperCase()}.`;
     } else {
-      subscriptionHeadline.innerHTML = `<span class="sub-highlight">ТЕКУЩИЙ УРОВЕНЬ</span>: ${tierLabel(state.subscription)}. <span class="sub-highlight">МОДУЛЬ ТРЕНИРОВОК</span>: ${state.mode.toUpperCase()}.`;
+      subscriptionHeadline.innerHTML = `<span class="sub-highlight">ТЕКУЩИЙ УРОВЕНЬ</span>: ${tierLabel(state.subscription)}.<br /><span class="sub-highlight">МОДУЛЬ ТРЕНИРОВОК</span>: ${state.mode.toUpperCase()}.`;
     }
   }
   const referralDiscount = Number(state.referralDiscountPercent) || 0;
@@ -1502,8 +1518,7 @@ function render() {
       : "РЕФ-СКИДКА: 25% на первый платёж CORE/PRO по приглашению.";
   }
   if (referralCopyMain) {
-    referralCopyMain.textContent =
-      "Йоу! Ты видел это!? ПОХУДЕНИЕ в режиме RPG! Я уже активировал персональный ЧИТ-КОД НА СУШКУ и готовлюсь к лету по полной без лишнего стресса. Присоединяйся по моей ссылке и будем проходить вместе!";
+    referralCopyMain.textContent = "Отправь другу ссылку. Текст приглашения подставится автоматически при нажатии «Поделиться».";
   }
   if (referralCopyNote) {
     referralCopyNote.textContent = referralDiscount > 0
@@ -1624,7 +1639,7 @@ function render() {
         ? "Быстрый старт закрыт: бонус «Анти-срыв» активирован."
         : "Быстрый старт закрыт. Бонус будет начислен после сохранения.";
     } else {
-      quickWinNote.textContent = `Закрой ${3 - quickDone} из 3 шагов, чтобы закрепить старт и снизить риск срыва.`;
+      quickWinNote.textContent = `Пройди ещё ${3 - quickDone} шага и забери бонус «Анти-срыв».`;
     }
   }
   if (quickWinButtons && quickWinButtons.length) {
@@ -1653,12 +1668,6 @@ function render() {
 
   missionPanelTitle.textContent = `Миссия: ${missionName}`;
   if (missionAvailability) missionAvailability.textContent = missionAccessNote(subscriptionInfo);
-  if (missionOpenVideoBtn) {
-    const openBlocked = subscriptionInfo.expired || cycleComplete || demoFinished || state.currentLevelPassed;
-    missionOpenVideoBtn.disabled = openBlocked;
-    missionOpenVideoBtn.classList.toggle("hidden", openBlocked);
-    missionOpenVideoBtn.textContent = missionInProgress ? "Открыть тренировку ещё раз" : "Открыть тренировку";
-  }
   if (missionStartBtn) {
     if (demoFinished) {
       missionStartBtn.disabled = false;
@@ -1759,7 +1768,7 @@ function render() {
   if (settingsEffectsVal) settingsEffectsVal.textContent = `${metrics.hydrationMl} мл / ${HYDRATION_TARGET_ML} мл`;
 
   sideQuestStatus.textContent = state.sideQuestDone ? `Статус: выполнено · бонус ${state.modifier}` : "Статус: не выполнено";
-  sideQuestBtn.textContent = state.sideQuestDone ? "Допзадание закрыто" : "Отметить выполнение";
+  sideQuestBtn.textContent = state.sideQuestDone ? "СДЕЛАНО" : "Я СДЕЛАЛ";
   sideQuestBtn.disabled = state.sideQuestDone || subscriptionInfo.expired || demoFinished;
 
   if (resultUnlockNote) {
@@ -1770,10 +1779,9 @@ function render() {
     } else if (cycleComplete) {
       resultUnlockNote.textContent = "Цикл 01 завершен. Дальше — новый цикл после обновления.";
     } else if (state.currentLevelPassed && state.nextUnlockAt) {
-      const unlockAt = new Date(state.nextUnlockAt);
-      resultUnlockNote.textContent = `Следующий уровень откроется ${formatUnlockDate(unlockAt)}. Лимит: 1 уровень в день.`;
+      resultUnlockNote.textContent = "1 день — 1 уровень. Прошел уровень? Следующий откроется завтра в 7:00 утра.";
     } else {
-      resultUnlockNote.textContent = `Лимит: 1 уровень в день. Следующий уровень открывается завтра в ${pad2(LEVEL_UNLOCK_HOUR)}:00 ${LEVEL_UNLOCK_TZ_LABEL}.`;
+      resultUnlockNote.textContent = "1 день — 1 уровень. Прошел уровень? Следующий откроется завтра в 7:00 утра.";
     }
   }
 
@@ -1806,27 +1814,34 @@ function syncShopButtons() {
 function resetMission() {
   missionInProgress = false;
   missionWatchedSeconds = 0;
-  missionHiddenStartedAt = null;
   missionRemaining = MISSION_TOTAL_SECONDS;
+  if (missionTicker) {
+    clearInterval(missionTicker);
+    missionTicker = null;
+  }
   if (missionFlowHint) {
-    missionFlowHint.textContent = "Завершение автоматически после 15 минут реального просмотра видео.";
+    missionFlowHint.textContent = "Сейчас это демо-заглушка: миссия закрывается по таймеру 15:00.";
   }
   updateMissionProgressUI();
 }
 
-function updateMissionWatchFromHiddenTime() {
-  if (!missionInProgress || !missionHiddenStartedAt) return;
-  const elapsed = Math.max(0, Math.floor((Date.now() - missionHiddenStartedAt) / 1000));
-  missionHiddenStartedAt = null;
-  if (!elapsed) return;
-  missionWatchedSeconds = clamp(missionWatchedSeconds + elapsed, 0, MISSION_TOTAL_SECONDS);
-  missionRemaining = clamp(MISSION_TOTAL_SECONDS - missionWatchedSeconds, 0, MISSION_TOTAL_SECONDS);
-  updateMissionProgressUI();
-}
-
-function openMissionVideo() {
-  const url = missionVideoUrlByLevel(state.level);
-  openExternalLink(url);
+function startMissionTicker() {
+  if (missionTicker) return;
+  missionTicker = setInterval(() => {
+    if (!missionInProgress) {
+      clearInterval(missionTicker);
+      missionTicker = null;
+      return;
+    }
+    missionWatchedSeconds = clamp(missionWatchedSeconds + 1, 0, MISSION_TOTAL_SECONDS);
+    missionRemaining = clamp(MISSION_TOTAL_SECONDS - missionWatchedSeconds, 0, MISSION_TOTAL_SECONDS);
+    updateMissionProgressUI();
+    if (missionWatchedSeconds >= MISSION_TOTAL_SECONDS) {
+      clearInterval(missionTicker);
+      missionTicker = null;
+      if (missionFlowHint) missionFlowHint.textContent = "Таймер завершен. Нажми «Подтвердить завершение».";
+    }
+  }, 1000);
 }
 
 function cancelMissionProgress(message = "") {
@@ -1853,7 +1868,7 @@ async function startMissionTimer() {
   }
   if (state.currentLevelPassed) {
     if (shopMessage) {
-      shopMessage.textContent = `Уровень на сегодня уже пройден. Новый откроется завтра в ${pad2(LEVEL_UNLOCK_HOUR)}:00 ${LEVEL_UNLOCK_TZ_LABEL}.`;
+      shopMessage.textContent = "1 день — 1 уровень. Прошел уровень? Следующий откроется завтра в 7:00 утра.";
     }
     return;
   }
@@ -1861,47 +1876,24 @@ async function startMissionTimer() {
   if (!missionInProgress) {
     missionInProgress = true;
     missionWatchedSeconds = 0;
-    missionHiddenStartedAt = null;
     missionRemaining = MISSION_TOTAL_SECONDS;
     updateMissionProgressUI();
+    startMissionTicker();
     if (missionFlowHint) {
-      missionFlowHint.textContent =
-        "Открой тренировку, досмотри и вернись сюда. Если выйдешь раньше — миссия начнётся заново.";
+      missionFlowHint.textContent = "Таймер запущен. Дождись 15:00 и нажми «Подтвердить завершение».";
     }
     render();
-    openMissionVideo();
     return;
   }
 
-  updateMissionWatchFromHiddenTime();
   if (missionWatchedSeconds < MISSION_TOTAL_SECONDS) {
     if (missionFlowHint) {
-      missionFlowHint.textContent =
-        `Пока не завершено. Осталось ${formatTimer(MISSION_TOTAL_SECONDS - missionWatchedSeconds)} реального просмотра.`;
+      missionFlowHint.textContent = `Пока не завершено. Осталось ${formatTimer(missionRemaining)}.`;
     }
     return;
   }
 
   completeMission();
-}
-
-function handleMissionOpenVideo() {
-  const subscriptionInfo = getSubscriptionInfo();
-  if (subscriptionInfo.expired || isDemoFinished() || state.currentLevelPassed) return;
-
-  if (!missionInProgress) {
-    missionInProgress = true;
-    missionWatchedSeconds = 0;
-    missionHiddenStartedAt = null;
-    missionRemaining = MISSION_TOTAL_SECONDS;
-    updateMissionProgressUI();
-    if (missionFlowHint) {
-      missionFlowHint.textContent =
-        "Открой тренировку, досмотри и вернись сюда. Если выйдешь раньше — миссия начнётся заново.";
-    }
-    render();
-  }
-  openMissionVideo();
 }
 
 async function completeMission() {
@@ -2047,7 +2039,7 @@ function markQuickWinDay(day) {
   if (done === 3 && !state.quickWin.bonusGranted) {
     state.quickWin.bonusGranted = true;
     state.chips += 250;
-    if (shopMessage) shopMessage.textContent = "72Ч БЫСТРЫЙ СТАРТ закрыт. Начислено +250 чипов.";
+    if (shopMessage) shopMessage.textContent = "БЫСТРЫЙ СТАРТ закрыт. Начислено +250 чипов.";
   }
   saveState();
   render();
@@ -2077,7 +2069,11 @@ function syncBodyLock() {
   const drawerOpen = mobileDrawer && !mobileDrawer.classList.contains("hidden");
   const ecosystemOpen = ecosystemModal && !ecosystemModal.classList.contains("hidden");
   const sosOpen = sosModal && !sosModal.classList.contains("hidden");
-  document.body.classList.toggle("modal-open", Boolean(modulesOpen || paywallOpen || drawerOpen || ecosystemOpen || sosOpen));
+  const proofOpen = proofModal && !proofModal.classList.contains("hidden");
+  document.body.classList.toggle(
+    "modal-open",
+    Boolean(modulesOpen || paywallOpen || drawerOpen || ecosystemOpen || sosOpen || proofOpen),
+  );
 }
 
 function openModulesModal() {
@@ -2718,8 +2714,32 @@ if (!motifReady) {
       playUiClick("primary");
       triggerHaptic("heavy");
       closeSosModal();
-      openSupportChat("SOS: тяга к срыву. Нужен быстрый протокол восстановления.");
+      openSupportChat("SOS: нужна помощь в анти-срыв режиме.");
     });
+  }
+  if (proofCase1Btn) {
+    proofCase1Btn.addEventListener("click", () => {
+      playUiClick("ghost");
+      triggerHaptic("soft");
+      openProofCase(1);
+    });
+  }
+  if (proofCase2Btn) {
+    proofCase2Btn.addEventListener("click", () => {
+      playUiClick("ghost");
+      triggerHaptic("soft");
+      openProofCase(2);
+    });
+  }
+  if (proofModalClose) {
+    proofModalClose.addEventListener("click", () => {
+      playUiClick("ghost");
+      triggerHaptic("soft");
+      closeProofModal();
+    });
+  }
+  if (proofModalBackdrop) {
+    proofModalBackdrop.addEventListener("click", closeProofModal);
   }
   if (mobileDrawerClose) {
     mobileDrawerClose.addEventListener("click", () => {
@@ -2737,18 +2757,11 @@ if (!motifReady) {
     closeDemoPaywall();
     closeEcosystemModal();
     closeSosModal();
+    closeProofModal();
     closeMobileDrawer();
     if (tourActive) finishTour(true);
   });
   document.addEventListener("visibilitychange", () => {
-    if (missionInProgress) {
-      if (document.visibilityState === "hidden") {
-        missionHiddenStartedAt = Date.now();
-      } else if (document.visibilityState === "visible") {
-        updateMissionWatchFromHiddenTime();
-        render();
-      }
-    }
     if (document.visibilityState === "visible") {
       checkAccessStatus({ manual: false });
     }
@@ -2787,13 +2800,6 @@ if (!motifReady) {
     triggerHaptic("heavy");
     startMissionTimer();
   });
-  if (missionOpenVideoBtn) {
-    missionOpenVideoBtn.addEventListener("click", () => {
-      playUiClick("ghost");
-      triggerHaptic("soft");
-      handleMissionOpenVideo();
-    });
-  }
   resultNextBtn.addEventListener("click", () => {
     playUiClick("primary");
     triggerHaptic("soft");

@@ -166,7 +166,7 @@
               </div>
               <div class="cta-stack">
                 <button class="btn btn--primary" id="cta-start">Запустить миссию</button>
-                <button class="btn btn--ghost" id="sos-btn">SOS: тянет на срыв</button>
+                <button class="btn btn--ghost" id="sos-btn">SOS: АНТИ-СРЫВ ГАЙД</button>
               </div>
               <div class="home-hudline">
                 <div class="home-hudline__item">
@@ -180,40 +180,37 @@
                 </div>
               </div>
               <div class="metric__label" id="home-access-rule">
-                Лимит: 1 уровень в день. Следующий уровень открывается на следующий день в 07:00 МСК.
+                1 день — 1 уровень. Прошел уровень? Следующий откроется завтра в 7:00 утра.
               </div>
               <div class="quickwin" id="quickwin-panel">
                 <div class="quickwin__header">
-                  <div class="quickwin__title">72Ч БЫСТРЫЙ СТАРТ</div>
+                  <div class="quickwin__title">БЫСТРЫЙ СТАРТ</div>
                   <div class="chip chip--cyan" id="quickwin-chip">0 / 3</div>
                 </div>
-                <div class="quickwin__subtitle">Первые 3 дня, чтобы получить ощутимый старт.</div>
+                <div class="quickwin__subtitle">Что ты получишь в первые 3 дня демо.</div>
                 <div class="quickwin__grid">
                   <button class="quickwin__task" id="quickwin-1" type="button" data-quickwin="1">
-                    <span class="quickwin__day">ДЕНЬ 1</span>
-                    <span class="quickwin__task-title">Анти-отёк старт</span>
-                    <span class="quickwin__task-note">Вода + шаги + миссия</span>
+                    <span class="quickwin__task-title">Легкость в теле</span>
+                    <span class="quickwin__task-note">Меньше отёков и тяжести к вечеру.</span>
                   </button>
                   <button class="quickwin__task" id="quickwin-2" type="button" data-quickwin="2">
-                    <span class="quickwin__day">ДЕНЬ 2</span>
-                    <span class="quickwin__task-title">Анти-зажор протокол</span>
-                    <span class="quickwin__task-note">Питание A/B/C + правило дня</span>
+                    <span class="quickwin__task-title">Контроль тяги</span>
+                    <span class="quickwin__task-note">Меньше срывов и вечернего дожора.</span>
                   </button>
                   <button class="quickwin__task" id="quickwin-3" type="button" data-quickwin="3">
-                    <span class="quickwin__day">ДЕНЬ 3</span>
-                    <span class="quickwin__task-title">Сравнение с Д0</span>
-                    <span class="quickwin__task-note">Вес/талия/фото + вывод</span>
+                    <span class="quickwin__task-title">Видимый прогресс</span>
+                    <span class="quickwin__task-note">Фото/талия/вес: уже видно, что процесс пошёл.</span>
                   </button>
                 </div>
-                <div class="quickwin__footer" id="quickwin-note">Закрой 3/3 и открой бонус «Анти-срыв».</div>
+                <div class="quickwin__footer" id="quickwin-note">Пройди 3/3 шага и открой бонус «Анти-срыв».</div>
               </div>
               <div class="milestone-strip">
                 <div class="milestone-strip__title">Контрольные точки</div>
                 <div class="milestone-strip__items">
-                  <div class="milestone-strip__item"><span>День 3</span> Легкость и контроль тяги</div>
-                  <div class="milestone-strip__item"><span>День 7</span> Режим закрепился</div>
-                  <div class="milestone-strip__item"><span>День 14</span> Видимый прогресс</div>
-                  <div class="milestone-strip__item"><span>День 30</span> Закрыт цикл</div>
+                  <div class="milestone-strip__item"><span>День 3</span> Легче тело, тяга под контролем</div>
+                  <div class="milestone-strip__item"><span>День 7</span> Режим закрепился, меньше откатов</div>
+                  <div class="milestone-strip__item"><span>День 14</span> Видно в зеркале и по замерам</div>
+                  <div class="milestone-strip__item"><span>День 30</span> Цикл закрыт, готов к следующему этапу</div>
                 </div>
               </div>
               <button class="btn btn--ghost home-details-toggle" id="home-details-toggle" type="button">
@@ -263,7 +260,7 @@
               </div>
               <div class="panel__body">
                 <div class="sidequest-card">
-                  <div class="sidequest-card__icon">⚡</div>
+                  <div class="sidequest-card__icon">◈</div>
                   <div class="sidequest-card__content">
                     <div class="sidequest-card__name" id="sidequest-name">Дойти до магазина пешком</div>
                     <div class="sidequest-card__note" id="sidequest-note">
@@ -275,7 +272,7 @@
                   Награда: <strong id="sidequest-reward">БОНУС НЕДЕЛИ</strong>
                 </div>
                 <div class="cta-row">
-                  <button class="btn btn--ghost" id="sidequest-btn">Отметить выполнение</button>
+                  <button class="btn btn--success" id="sidequest-btn">Я СДЕЛАЛ</button>
                 </div>
                 <div class="metric__label" id="sidequest-status">Статус: не выполнено</div>
               </div>
@@ -292,16 +289,15 @@
             <div class="panel__body">
               <div class="video-placeholder">
                 <div class="video-placeholder__icon">▶</div>
-                <div class="video-placeholder__text">Тренировка в YouTube</div>
+                <div class="video-placeholder__text">Тренировка скоро будет добавлена</div>
                 <div class="watch-track">
                   <div class="watch-fill" id="mission-watch-fill" style="width: 0%"></div>
                 </div>
               </div>
               <button class="btn btn--primary mission-main-btn" id="mission-start">Запустить миссию</button>
-              <button class="btn btn--ghost mission-open-video-btn hidden" id="mission-open-video">Открыть тренировку</button>
-              <div class="metric__label" id="mission-flow-hint">Завершение автоматически после просмотра до конца.</div>
+              <div class="metric__label" id="mission-flow-hint">Сейчас это демо-заглушка: миссия закрывается по таймеру 15:00.</div>
               <div class="metric__label" id="mission-availability">
-                Доступен 1 уровень на сегодня. После прохождения новый откроется завтра в 07:00 МСК.
+                1 день — 1 уровень. Прошел уровень? Следующий откроется завтра в 7:00 утра.
               </div>
             </div>
           </div>
@@ -328,7 +324,7 @@
               </div>
               <div class="result-total" id="result-total">+150 чипов</div>
               <div class="metric__label" id="result-unlock-note">
-                Следующий уровень откроется на следующий день в 07:00 МСК. Лимит: 1 уровень в день.
+                1 день — 1 уровень. Прошел уровень? Следующий откроется завтра в 7:00 утра.
               </div>
               <div class="cta-row">
                 <button class="btn btn--primary" id="result-next">К следующему уровню</button>
@@ -386,8 +382,7 @@
               <div class="referral-card">
                 <div class="referral-card__title">Реферальная программа</div>
                 <div class="referral-card__text" id="referral-copy-main">
-                  Йоу! Ты видел это!? ПОХУДЕНИЕ в режиме RPG! Я уже активировал персональный ЧИТ-КОД НА СУШКУ и готовлюсь к лету по
-                  полной без лишнего стресса. Присоединяйся по моей ссылке и будем проходить вместе!
+                  Отправь другу реф-ссылку. Текст приглашения появится автоматически при нажатии «Поделиться».
                 </div>
                 <div class="referral-card__link" id="ref-link">https://t.me/cheatcodewith_bot</div>
                 <div class="cta-row referral-card__actions">
@@ -537,25 +532,23 @@
             </div>
             <div class="panel__body">
               <div class="metric__label" id="subscription-headline">
-                <span class="sub-highlight">ТЕКУЩИЙ УРОВЕНЬ</span>: CORE.
+                <span class="sub-highlight">ТЕКУЩИЙ УРОВЕНЬ</span>: CORE.<br />
                 <span class="sub-highlight">МОДУЛЬ ТРЕНИРОВОК</span>: ПЕРЕЗАПУСК.
               </div>
               <div class="metric__label" id="subscription-ref-note">РЕФ-СКИДКА: 25% на первый платёж CORE/PRO по приглашению.</div>
               <div class="proof-strip">
                 <div class="proof-strip__title">Почему это работает</div>
                 <div class="proof-strip__items">
-                  <div class="proof-strip__item">
+                  <button class="proof-strip__item proof-strip__item--case" id="proof-case-1" type="button">
                     <strong>Кейс #1</strong>
-                    <span>−6 см в талии за 30 дней</span>
-                  </div>
-                  <div class="proof-strip__item">
+                    <span>Реальный результат: фото до/после</span>
+                    <em>Открыть кейс</em>
+                  </button>
+                  <button class="proof-strip__item proof-strip__item--case" id="proof-case-2" type="button">
                     <strong>Кейс #2</strong>
-                    <span>−4.8 кг за 6 недель без зала</span>
-                  </div>
-                  <div class="proof-strip__item">
-                    <strong>Механика</strong>
-                    <span>1 уровень в день + контроль срыва</span>
-                  </div>
+                    <span>Реальный результат: фото до/после</span>
+                    <em>Открыть кейс</em>
+                  </button>
                 </div>
               </div>
               <div class="pending-upgrade hidden" id="subscription-pending">
@@ -820,26 +813,39 @@
       <div class="modules-modal__backdrop" id="sos-modal-backdrop"></div>
       <div class="modules-modal__card">
         <div class="modules-modal__head">
-          <div class="modules-modal__title">SOS: Протокол срыва</div>
+          <div class="modules-modal__title">SOS: Анти-срыв</div>
           <button class="btn btn--ghost modules-modal__close" id="sos-modal-close">Закрыть</button>
         </div>
-        <div class="modules-modal__note">60 секунд, чтобы вернуть контроль и не сорваться.</div>
+        <div class="modules-modal__note">Короткий анти-срыв гайд: сделай шаги по порядку и верни контроль за 2–3 минуты.</div>
         <div class="modules-modal__grid">
           <article class="module-card">
-            <div class="module-card__title">Шаг 1</div>
-            <div class="module-card__desc">Выпей 300 мл воды прямо сейчас.</div>
+            <div class="module-card__title">Шаг 1 · Стоп-импульс</div>
+            <div class="module-card__desc">Выпей стакан воды и сделай 10 медленных вдохов.</div>
           </article>
           <article class="module-card">
-            <div class="module-card__title">Шаг 2</div>
-            <div class="module-card__desc">Сделай 20 приседаний или 60 секунд планки.</div>
+            <div class="module-card__title">Шаг 2 · Переключи тело</div>
+            <div class="module-card__desc">20 приседаний или 60 секунд планки, чтобы снять тягу.</div>
           </article>
           <article class="module-card">
-            <div class="module-card__title">Шаг 3</div>
-            <div class="module-card__desc">Открой поддержку и зафиксируй, что запустило тягу.</div>
+            <div class="module-card__title">Шаг 3 · Закрепи контроль</div>
+            <div class="module-card__desc">Напиши в поддержку: «тяга сейчас, нужен фокус».</div>
           </article>
         </div>
         <div class="cta-row ecosystem-modal__actions">
           <button class="btn btn--primary" id="sos-open-support">Открыть поддержку</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modules-modal hidden" id="proof-modal" aria-hidden="true">
+      <div class="modules-modal__backdrop" id="proof-modal-backdrop"></div>
+      <div class="modules-modal__card proof-modal__card">
+        <div class="modules-modal__head">
+          <div class="modules-modal__title" id="proof-modal-title">Кейс</div>
+          <button class="btn btn--ghost modules-modal__close" id="proof-modal-close">Закрыть</button>
+        </div>
+        <div class="proof-modal__image-wrap">
+          <img class="proof-modal__image" id="proof-modal-image" src="" alt="Кейс до/после" />
         </div>
       </div>
     </div>
