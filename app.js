@@ -6,6 +6,7 @@ const LEVEL_UNLOCK_HOUR = 7;
 const MOSCOW_OFFSET_MS = 3 * 60 * 60 * 1000;
 const PAYMENT_STATUS_POLL_MS = 15000;
 const ONBOARDING_VERSION = 7;
+const ONBOARDING_RESHOW_ON_VERSION = false;
 const DEMO_LEVEL_CAP = 3;
 const ALWAYS_SHOW_ONBOARDING = false;
 const TIER_RANK = { DEMO: 0, CORE: 1, BOOST: 2, ELITE: 3 };
@@ -192,9 +193,13 @@ const homeWindowDetails = document.getElementById("home-window-details");
 const homeBonusDetails = document.getElementById("home-bonus-details");
 const homeWindowChangeBtn = document.getElementById("home-window-change-btn");
 const sosBtn = document.getElementById("sos-btn");
+const riskBadge = document.getElementById("risk-badge");
+const riskText = document.getElementById("risk-text");
+const riskActionBtn = document.getElementById("risk-action-btn");
 const quickWinChip = document.getElementById("quickwin-chip");
 const quickWinNote = document.getElementById("quickwin-note");
 const quickWinButtons = document.querySelectorAll("[data-quickwin]");
+const milestoneItems = document.querySelectorAll("[data-milestone]");
 
 const missionPanelTitle = document.getElementById("mission-panel-title");
 
@@ -215,7 +220,10 @@ const refLink = document.getElementById("ref-link");
 const refCopyBtn = document.getElementById("ref-copy-btn");
 const referralCopyMain = document.getElementById("referral-copy-main");
 const referralCopyNote = document.getElementById("referral-copy-note");
+const referralGoal = document.getElementById("referral-goal");
 const subscriptionRefNote = document.getElementById("subscription-ref-note");
+const refStatsInvited = document.getElementById("ref-stats-invited");
+const refStatsPaid = document.getElementById("ref-stats-paid");
 
 const resultMainReward = document.getElementById("result-main-reward");
 const resultBonusReward = document.getElementById("result-bonus-reward");
@@ -224,6 +232,8 @@ const resultTotal = document.getElementById("result-total");
 const resultUnlockNote = document.getElementById("result-unlock-note");
 
 const shopBalance = document.getElementById("shop-balance");
+const shopRecoText = document.getElementById("shop-reco-text");
+const shopRecoBtn = document.getElementById("shop-reco-btn");
 const modifierValue = document.getElementById("modifier-value");
 const bossBanner = document.getElementById("boss-banner");
 const arsenalWindow = document.getElementById("arsenal-window");
@@ -250,6 +260,9 @@ const subscriptionPending = document.getElementById("subscription-pending");
 const subscriptionPendingText = document.getElementById("subscription-pending-text");
 const subscriptionCheckBtn = document.getElementById("subscription-check-btn");
 const subscriptionResendBtn = document.getElementById("subscription-resend-btn");
+const subscriptionFastOffer = document.getElementById("subscription-fast-offer");
+const subscriptionFastText = document.getElementById("subscription-fast-text");
+const subscriptionFastCta = document.getElementById("subscription-fast-cta");
 const upgradeCoreBtn = document.getElementById("upgrade-core-btn");
 const upgradeBoostBtn = document.getElementById("upgrade-boost-btn");
 const upgradeEliteBtn = document.getElementById("upgrade-elite-btn");
@@ -339,6 +352,10 @@ let tourActive = false;
 let tourIndex = 0;
 let progressRingValue = 0;
 let progressRingAnimationFrame = null;
+let referralStatsLoading = false;
+let referralStatsLoadedAt = 0;
+let referralStats = { invited: 0, paid: 0 };
+let analyticsSessionId = `${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
 
 const TOUR_STEPS = [
   {
@@ -525,6 +542,62 @@ function getReferralLink() {
   return `${MAIN_BOT_LINK}?start=${encodeURIComponent(`ref_${tgUserId}`)}`;
 }
 
+function trackEvent(eventName, meta = {}) {
+  const name = String(eventName || "").trim();
+  if (!name) return;
+  const initData = getTelegramInitData();
+  const tgUserId = getTelegramUserId();
+  const headers = { "Content-Type": "application/json" };
+  if (initData) headers["X-Tg-Init-Data"] = initData;
+
+  const payload = {
+    event: name,
+    screen: getActiveScreenName(),
+    tier: state.subscription,
+    level: state.level,
+    session_id: analyticsSessionId,
+    meta: meta && typeof meta === "object" ? meta : {},
+  };
+  if (tgUserId) payload.tg_user_id = tgUserId;
+
+  fetch("/api/analytics/event", {
+    method: "POST",
+    headers,
+    body: JSON.stringify(payload),
+  }).catch(() => {});
+}
+
+async function refreshReferralStats({ force = false } = {}) {
+  const tgUserId = getTelegramUserId();
+  if (!tgUserId || referralStatsLoading) return;
+  const now = Date.now();
+  if (!force && now - referralStatsLoadedAt < 45000) return;
+
+  referralStatsLoading = true;
+  try {
+    const response = await fetch(`/api/referral/status?tg_user_id=${encodeURIComponent(tgUserId)}`);
+    if (!response.ok) throw new Error(`ref_stats_${response.status}`);
+    const data = await response.json();
+    const invited = Number(data?.invited || 0);
+    const paid = Number(data?.paid || 0);
+    referralStats = { invited, paid };
+    if (refStatsInvited) refStatsInvited.textContent = String(invited);
+    if (refStatsPaid) refStatsPaid.textContent = String(paid);
+    if (referralGoal) {
+      const rest = Math.max(0, 1 - paid);
+      referralGoal.textContent =
+        rest > 0
+          ? `До бонуса: ${rest} первая оплата по твоей ссылке.`
+          : "Бонус закрыт: тебе начислен 1 месяц CORE.";
+    }
+    referralStatsLoadedAt = now;
+  } catch {
+    // keep defaults
+  } finally {
+    referralStatsLoading = false;
+  }
+}
+
 async function shareProgress() {
   const shareUrl = getReferralLink();
   const text = buildShareText();
@@ -537,6 +610,7 @@ async function shareProgress() {
   }
 
   const tgShare = `https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(text)}`;
+  trackEvent("referral_share", { link: shareUrl });
   openExternalLink(tgShare);
 }
 
@@ -747,6 +821,7 @@ function applyAccessStatus(status, { manual = false } = {}) {
   if (changed) {
     saveState();
     render();
+    refreshReferralStats({ force: true });
     return;
   }
 
@@ -1433,6 +1508,95 @@ function weeklyScorecardData() {
   };
 }
 
+function daysSinceLastCompletion() {
+  const history = Array.isArray(state.completedHistory) ? state.completedHistory : [];
+  const dated = history
+    .map((entry) => Date.parse(entry?.completedAt || ""))
+    .filter((value) => Number.isFinite(value))
+    .sort((a, b) => b - a);
+  if (!dated.length) return null;
+  const last = new Date(dated[0]);
+  const today = startOfDay(new Date());
+  const lastDay = startOfDay(last);
+  return Math.max(0, Math.floor((today.getTime() - lastDay.getTime()) / (24 * 60 * 60 * 1000)));
+}
+
+function riskSnapshot() {
+  if (state.currentLevelPassed) {
+    return {
+      badge: "GREEN",
+      text: "Уровень уже закрыт. Риск срыва низкий — держи воду и вечер без хаоса.",
+    };
+  }
+
+  const days = daysSinceLastCompletion();
+  if (days === null) {
+    return {
+      badge: "YELLOW",
+      text: "Стартовый риск. Закрой первую миссию в окне, чтобы включить стабильный ритм.",
+    };
+  }
+
+  if (days >= 2) {
+    return {
+      badge: "RED",
+      text: "Высокий риск отката: пропуск 2+ дня. Запусти SOS и закрой хотя бы один уровень сегодня.",
+    };
+  }
+
+  if (days >= 1 || !state.sideQuestDone) {
+    return {
+      badge: "YELLOW",
+      text: "Средний риск: сегодня лучше закрыть миссию до вечера и не уходить в ночной дожор.",
+    };
+  }
+
+  return {
+    badge: "GREEN",
+    text: "Контроль держится. Текущий ритм снижает риск срыва и ускоряет прогресс по циклу.",
+  };
+}
+
+function shopRecommendation() {
+  const has = (itemId) => Boolean(state.purchases[itemId]);
+  if (!has("bundle_full_start")) {
+    return {
+      itemId: "bundle_full_start",
+      text: "Хочешь максимум эффекта без выбора «что купить сначала» — возьми набор «Полный старт».",
+      cta: "Открыть «Полный старт»",
+    };
+  }
+  if (!has("bundle_anti_sryv")) {
+    return {
+      itemId: "bundle_anti_sryv",
+      text: "Если мешают срывы и ночной дожор, закрой это набором «Анти-срыв».",
+      cta: "Открыть «Анти-срыв»",
+    };
+  }
+  if (!has("core_condition_pack")) {
+    return {
+      itemId: "core_condition_pack",
+      text: "Следующий шаг — «Кор и кондиция»: ускоряет жиросжигание и визуальный прогресс.",
+      cta: "Открыть «Кор и кондиция»",
+    };
+  }
+  return {
+    itemId: "",
+    text: "Основной магазин закрыт. Держи фокус на ежедневных миссиях и апгрейде тарифа.",
+    cta: "Перейти к тарифам",
+  };
+}
+
+function highlightShopItem(itemId) {
+  if (!itemId) return;
+  const button = document.querySelector(`.shop-buy[data-item="${itemId}"]`);
+  const card = button ? button.closest(".shop-item") : null;
+  if (!card) return;
+  card.classList.add("is-highlight");
+  card.scrollIntoView({ behavior: "smooth", block: "center" });
+  setTimeout(() => card.classList.remove("is-highlight"), 1400);
+}
+
 function setProgressRingValue(value) {
   if (!progressRing) return;
   progressRingValue = clamp(Number(value) || 0, 0, 1);
@@ -1467,6 +1631,7 @@ function animateProgressRingTo(targetValue, { reset = false } = {}) {
 }
 
 function setActiveScreen(name) {
+  const previous = getActiveScreenName();
   if (name !== "mission" && missionInProgress) {
     cancelMissionProgress("Миссия не завершена. Начни заново.");
   }
@@ -1483,6 +1648,10 @@ function setActiveScreen(name) {
   });
   if (name === "progress") {
     animateProgressRingTo(progressTargetValue(), { reset: true });
+    refreshReferralStats({ force: false });
+  }
+  if (name !== previous) {
+    trackEvent("screen_view", { from: previous, to: name });
   }
 }
 
@@ -1544,6 +1713,12 @@ function render() {
     referralCopyNote.textContent = referralDiscount > 0
       ? `По твоей ссылке активна скидка ${referralDiscount}% на CORE/PRO. Бонус: 1 месяц CORE после первой оплаты друга.`
       : "По ссылке друг получает скидку 25% на CORE/PRO. После его первой оплаты тебе начисляется 1 месяц CORE.";
+  }
+  if (referralGoal) {
+    const paid = Number(referralStats?.paid || 0);
+    const rest = Math.max(0, 1 - paid);
+    referralGoal.textContent =
+      rest > 0 ? `До бонуса: ${rest} первая оплата по твоей ссылке.` : "Бонус закрыт: тебе начислен 1 месяц CORE.";
   }
   if (sidebarUpgradeBenefits) sidebarUpgradeBenefits.textContent = nextTierBenefits(state.subscription);
   if (sidebarSubscriptionTerm) {
@@ -1625,6 +1800,29 @@ function render() {
       subscriptionCheckBtn.disabled = true;
     }
   }
+  if (subscriptionFastOffer && subscriptionFastText && subscriptionFastCta) {
+    if (state.subscription === "ELITE") {
+      subscriptionFastOffer.classList.add("hidden");
+    } else {
+      subscriptionFastOffer.classList.remove("hidden");
+      const target = state.subscription === "BOOST" ? "ELITE" : "BOOST";
+      subscriptionFastCta.dataset.target = target;
+      if (target === "BOOST") {
+        subscriptionFastText.textContent =
+          "Лучшее соотношение цена/поддержка: PRO ускоряет результат за счёт кураторской среды и еженедельного контроля.";
+        subscriptionFastCta.textContent =
+          pendingTier === "BOOST"
+            ? "Ожидается оплата PRO"
+            : referralDiscount > 0
+              ? `Выбрать PRO (−${referralDiscount}%)`
+              : "Выбрать PRO";
+      } else {
+        subscriptionFastText.textContent =
+          "Переход на VIP: персональная стратегия и максимум контроля без ручного хаоса каждый день.";
+        subscriptionFastCta.textContent = pendingTier === "ELITE" ? "Ожидается оплата VIP" : "Выбрать VIP";
+      }
+    }
+  }
 
   hudLevel.textContent = pad2(state.level);
   hudFill.style.width = `${levelPercent}%`;
@@ -1665,6 +1863,18 @@ function render() {
       quickWinNote.textContent = `Пройди ещё ${3 - quickDone} шага и забери бонус «Анти-срыв».`;
     }
   }
+  const risk = riskSnapshot();
+  if (riskBadge) {
+    riskBadge.textContent = risk.badge;
+    riskBadge.classList.remove("risk-badge--green", "risk-badge--yellow", "risk-badge--red");
+    if (risk.badge === "GREEN") riskBadge.classList.add("risk-badge--green");
+    if (risk.badge === "YELLOW") riskBadge.classList.add("risk-badge--yellow");
+    if (risk.badge === "RED") riskBadge.classList.add("risk-badge--red");
+  }
+  if (riskText) riskText.textContent = risk.text;
+  if (riskActionBtn) {
+    riskActionBtn.textContent = risk.badge === "GREEN" ? "Открыть SOS протокол" : "Снизить риск через SOS";
+  }
   if (quickWinButtons && quickWinButtons.length) {
     quickWinButtons.forEach((btn) => {
       const day = Number(btn.dataset.quickwin);
@@ -1680,6 +1890,19 @@ function render() {
         btn.setAttribute("aria-label", `День ${day}: откроется позже`);
       } else {
         btn.setAttribute("aria-label", `День ${day}: доступно`);
+      }
+    });
+  }
+  if (milestoneItems && milestoneItems.length) {
+    milestoneItems.forEach((item) => {
+      const day = Number(item.dataset.milestone);
+      if (!day) return;
+      const done = completedLevels >= day;
+      const statusNode = item.querySelector(".milestone-strip__status");
+      item.classList.toggle("is-done", done);
+      if (statusNode) {
+        if (done) statusNode.textContent = "Закрыто";
+        else statusNode.textContent = `Осталось ${Math.max(1, day - completedLevels)} дн.`;
       }
     });
   }
@@ -1757,6 +1980,12 @@ function render() {
   if (refLink) refLink.textContent = getReferralLink();
 
   shopBalance.textContent = `ЧИПЫ ${state.chips}`;
+  const recommendation = shopRecommendation();
+  if (shopRecoText) shopRecoText.textContent = recommendation.text;
+  if (shopRecoBtn) {
+    shopRecoBtn.dataset.item = recommendation.itemId;
+    shopRecoBtn.textContent = recommendation.cta;
+  }
   modifierValue.textContent = state.modifier;
   if (state.subscription === "DEMO") {
     bossBanner.textContent = demoFinished
@@ -1822,13 +2051,15 @@ function syncShopButtons() {
     const itemId = button.dataset.item;
     const purchased = Boolean(state.purchases[itemId]);
     const hasLink = Boolean(String(button.dataset.link || "").trim());
+    const isBundle = Boolean(String(button.dataset.bundle || "").trim());
     if (purchased) {
-      button.textContent = hasLink ? "Открыть материал" : "Получить в поддержке";
+      if (isBundle) button.textContent = "Набор активирован";
+      else button.textContent = hasLink ? "Открыть материал" : "Получить в поддержке";
       button.classList.add("is-purchased");
       button.disabled = false;
       return;
     }
-    button.textContent = `Купить за ${cost} чипов`;
+    button.textContent = isBundle ? `Купить набор за ${cost} чипов` : `Купить за ${cost} чипов`;
     button.classList.remove("is-purchased");
     button.disabled = false;
   });
@@ -1843,7 +2074,7 @@ function resetMission() {
     missionTicker = null;
   }
   if (missionFlowHint) {
-    missionFlowHint.textContent = "Сейчас это демо-заглушка: миссия закрывается по таймеру 15:00.";
+    missionFlowHint.textContent = "Контент в загрузке: пока используется честный демо-таймер 15:00.";
   }
   updateMissionProgressUI();
 }
@@ -1862,7 +2093,7 @@ function startMissionTicker() {
     if (missionWatchedSeconds >= MISSION_TOTAL_SECONDS) {
       clearInterval(missionTicker);
       missionTicker = null;
-      if (missionFlowHint) missionFlowHint.textContent = "Таймер завершен. Нажми «Подтвердить завершение».";
+      if (missionFlowHint) missionFlowHint.textContent = "15:00 завершены. Нажми «Подтвердить завершение».";
     }
   }, 1000);
 }
@@ -1878,7 +2109,7 @@ function cancelMissionProgress(message = "") {
 async function startMissionTimer() {
   const subscriptionInfo = getSubscriptionInfo();
   if (isDemoFinished()) {
-    openSubscriptionPaywall();
+    openSubscriptionPaywall("mission_demo_finished");
     return;
   }
   if (subscriptionInfo.expired) {
@@ -1903,8 +2134,9 @@ async function startMissionTimer() {
     updateMissionProgressUI();
     startMissionTicker();
     if (missionFlowHint) {
-      missionFlowHint.textContent = "Таймер запущен. Дождись 15:00 и нажми «Подтвердить завершение».";
+      missionFlowHint.textContent = "Запущен демо-таймер. После 15:00 нажми «Подтвердить завершение».";
     }
+    trackEvent("mission_start", { level: state.level, mode: state.mode });
     render();
     return;
   }
@@ -1947,6 +2179,7 @@ async function completeMission() {
   }
 
   saveState();
+  trackEvent("mission_complete", { level: currentLevel, boss, reward: mainReward + bonusReward });
   render();
   setActiveScreen("result");
   playResultFx();
@@ -1968,9 +2201,19 @@ function handleShopPurchase(event) {
   const cost = Number(button.dataset.cost);
   const itemId = button.dataset.item;
   const link = String(button.dataset.link || "").trim();
+  const bundleRaw = String(button.dataset.bundle || "").trim();
+  const bundleItems = bundleRaw
+    ? bundleRaw
+        .split(",")
+        .map((value) => value.trim())
+        .filter(Boolean)
+    : [];
+  const isBundle = bundleItems.length > 0;
 
   if (state.purchases[itemId]) {
-    if (link) {
+    if (isBundle) {
+      shopMessage.textContent = "Набор уже активирован. Открой материалы из карточек ниже.";
+    } else if (link) {
       shopMessage.textContent = "Открываю материал...";
       openExternalLink(link);
     } else {
@@ -1987,10 +2230,22 @@ function handleShopPurchase(event) {
 
   state.chips -= cost;
   state.purchases[itemId] = true;
-  shopMessage.textContent = "Покупка успешна. Материал открыт.";
+  if (isBundle) {
+    bundleItems.forEach((bundleItemId) => {
+      state.purchases[bundleItemId] = true;
+    });
+    shopMessage.textContent = "Набор активирован. Все материалы в пакете доступны для открытия.";
+  } else {
+    shopMessage.textContent = "Покупка успешна. Материал открыт.";
+  }
 
   saveState();
   render();
+  trackEvent("shop_purchase", { item_id: itemId, cost, bundle: isBundle, bundle_size: bundleItems.length });
+
+  if (isBundle) {
+    return;
+  }
 
   if (link) {
     openExternalLink(link);
@@ -2023,7 +2278,14 @@ async function upgradeSubscription(target) {
   state.referralDiscountPercent = Number(payment.discountPercent) || 0;
   saveState();
   render();
-  if (payment.url) openExternalLink(payment.url);
+  if (payment.url) {
+    trackEvent("payment_link_open", {
+      tier: target,
+      discount_percent: state.referralDiscountPercent || 0,
+      source: payment.source || "default",
+    });
+    openExternalLink(payment.url);
+  }
 
   setActiveScreen("subscription");
   closeDemoPaywall();
@@ -2048,6 +2310,7 @@ function activateSideQuest() {
   state.sideQuestDone = true;
   state.modifier = MODIFIERS[modifierIndex];
   saveState();
+  trackEvent("sidequest_done", { modifier: state.modifier, level: state.level });
   render();
 }
 
@@ -2058,10 +2321,12 @@ function markQuickWinDay(day) {
   if (state.level < day) return;
 
   state.quickWin[key] = true;
+  trackEvent("quickwin_step_done", { day });
   const done = quickWinDoneCount();
   if (done === 3 && !state.quickWin.bonusGranted) {
     state.quickWin.bonusGranted = true;
     state.chips += 250;
+    trackEvent("quickwin_completed", { bonus_chips: 250 });
     if (shopMessage) shopMessage.textContent = "БЫСТРЫЙ СТАРТ закрыт. Начислено +250 чипов.";
   }
   saveState();
@@ -2199,13 +2464,14 @@ function closeMobileDrawer() {
   syncBodyLock();
 }
 
-function openSubscriptionPaywall() {
+function openSubscriptionPaywall(source = "unknown") {
   closeMobileDrawer();
   closeModulesModal();
   setActiveScreen("subscription");
   if (shopMessage) shopMessage.textContent = "Демо завершено. Выбери тариф для доступа к уровню 4+.";
   if (isDemoFinished()) openDemoPaywall();
   else closeDemoPaywall();
+  trackEvent("paywall_open", { source });
 }
 
 function clearTourHighlight() {
@@ -2455,7 +2721,7 @@ function finishOnboarding() {
   saveState();
   if (isDemoFinished()) {
     demoPaywallPresented = true;
-    openSubscriptionPaywall();
+    openSubscriptionPaywall("onboarding_finished_demo");
     return;
   }
   render();
@@ -2487,7 +2753,7 @@ function runBootSequence() {
           ALWAYS_SHOW_ONBOARDING ||
           forceOnboarding ||
           !state.onboardingDone ||
-          state.onboardingVersionSeen !== ONBOARDING_VERSION
+          (ONBOARDING_RESHOW_ON_VERSION && state.onboardingVersionSeen !== ONBOARDING_VERSION)
         ) {
           onboarding.classList.remove("hidden");
           showOnboardingStep(1);
@@ -2584,7 +2850,7 @@ if (!motifReady) {
     playUiClick("primary");
     triggerHaptic("heavy");
     if (isDemoFinished()) {
-      openSubscriptionPaywall();
+      openSubscriptionPaywall("home_cta_demo");
       return;
     }
     setActiveScreen("mission");
@@ -2593,6 +2859,15 @@ if (!motifReady) {
     sosBtn.addEventListener("click", () => {
       playUiClick("ghost");
       triggerHaptic("heavy");
+      trackEvent("sos_open", { level: state.level });
+      openSosModal();
+    });
+  }
+  if (riskActionBtn) {
+    riskActionBtn.addEventListener("click", () => {
+      playUiClick("ghost");
+      triggerHaptic("heavy");
+      trackEvent("sos_open", { level: state.level, source: "risk_panel" });
       openSosModal();
     });
   }
@@ -2617,14 +2892,14 @@ if (!motifReady) {
     homePaywallBtn.addEventListener("click", () => {
       playUiClick("upgrade");
       triggerHaptic("heavy");
-      openSubscriptionPaywall();
+      openSubscriptionPaywall("home_paywall_block");
     });
   }
   if (progressPaywallBtn) {
     progressPaywallBtn.addEventListener("click", () => {
       playUiClick("upgrade");
       triggerHaptic("heavy");
-      openSubscriptionPaywall();
+      openSubscriptionPaywall("progress_paywall_block");
     });
   }
   if (progressShareBtn) {
@@ -2651,6 +2926,7 @@ if (!motifReady) {
         if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
           await navigator.clipboard.writeText(link);
         }
+        trackEvent("referral_copy", { link });
         if (shopMessage) {
           shopMessage.textContent =
             "Ссылка скопирована. Другу — скидка 25% на CORE/PRO, тебе — месяц CORE после его первой оплаты.";
@@ -2683,7 +2959,7 @@ if (!motifReady) {
       if (isDemoFinished()) {
         playUiClick("upgrade");
         triggerHaptic("heavy");
-        openSubscriptionPaywall();
+        openSubscriptionPaywall("arsenal_demo");
         return;
       }
       playUiClick("ghost");
@@ -2773,6 +3049,7 @@ if (!motifReady) {
     sosOpenSupport.addEventListener("click", () => {
       playUiClick("primary");
       triggerHaptic("heavy");
+      trackEvent("sos_not_helped", { level: state.level });
       closeSosModal();
       openSosGuidesModal();
     });
@@ -2794,6 +3071,7 @@ if (!motifReady) {
         triggerHaptic("heavy");
         const key = button.dataset.guide;
         const url = guideUrl(key);
+        trackEvent("sos_guide_open", { guide: key || "" });
         if (url) openExternalLink(url);
         closeSosGuidesModal();
       });
@@ -2852,6 +3130,7 @@ if (!motifReady) {
   });
   window.addEventListener("focus", () => {
     checkAccessStatus({ manual: false });
+    refreshReferralStats({ force: false });
   });
   window.addEventListener("online", () => {
     backendReachable = true;
@@ -2888,7 +3167,7 @@ if (!motifReady) {
     playUiClick("primary");
     triggerHaptic("soft");
     if (isDemoFinished()) {
-      openSubscriptionPaywall();
+      openSubscriptionPaywall("result_demo");
       return;
     }
     setActiveScreen("home");
@@ -2917,6 +3196,20 @@ if (!motifReady) {
       handleShopPurchase(event);
     }),
   );
+  if (shopRecoBtn) {
+    shopRecoBtn.addEventListener("click", () => {
+      const itemId = String(shopRecoBtn.dataset.item || "");
+      playUiClick("primary");
+      triggerHaptic("soft");
+      if (!itemId) {
+        setActiveScreen("subscription");
+        return;
+      }
+      setActiveScreen("shop");
+      highlightShopItem(itemId);
+      trackEvent("shop_recommendation_open", { item_id: itemId });
+    });
+  }
   if (sidebarUpgradeBtn) {
     sidebarUpgradeBtn.addEventListener("click", () => {
       playUiClick("upgrade");
@@ -2945,10 +3238,20 @@ if (!motifReady) {
       upgradeSubscription("ELITE");
     });
   }
+  if (subscriptionFastCta) {
+    subscriptionFastCta.addEventListener("click", () => {
+      const target = normalizeTier(subscriptionFastCta.dataset.target);
+      if (!target) return;
+      playUiClick("upgrade");
+      triggerHaptic("heavy");
+      upgradeSubscription(target);
+    });
+  }
   if (subscriptionCheckBtn) {
     subscriptionCheckBtn.addEventListener("click", async () => {
       playUiClick("primary");
       triggerHaptic("heavy");
+      trackEvent("payment_check_manual");
       await checkAccessStatus({ manual: true });
     });
   }
@@ -2956,6 +3259,7 @@ if (!motifReady) {
     subscriptionResendBtn.addEventListener("click", async () => {
       playUiClick("ghost");
       triggerHaptic("soft");
+      trackEvent("payment_resend_bot");
 
       const pendingTier = getPendingUpgradeTier();
       const targetLabel = subscriptionPendingText || shopMessage;
@@ -3112,12 +3416,14 @@ if (!motifReady) {
       // eslint-disable-next-line no-console
       console.error("render_failed", error);
     }
+    trackEvent("app_open", { startup_screen: STARTUP_SCREEN || "home" });
 
     // Allow Telegram `web_app` buttons to open directly on a specific screen.
     if (STARTUP_SCREEN && onboarding && onboarding.classList.contains("hidden")) {
       setActiveScreen(STARTUP_SCREEN);
     }
     await syncReferralDiscountState();
+    await refreshReferralStats({ force: true });
     startAccessPolling();
     await checkAccessStatus({ manual: false, refresh: true });
   })();

@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Russo+One&display=swap" rel="stylesheet" />
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link rel="stylesheet" href="styles-motif.css?v=20260220a" />
+    <link rel="stylesheet" href="styles-motif.css?v=20260222a" />
   </head>
   <body>
     <div class="global-overlay" aria-hidden="true"></div>
@@ -204,13 +204,39 @@
                 </div>
                 <div class="quickwin__footer" id="quickwin-note">Пройди 3/3 шага и открой бонус «Анти-срыв».</div>
               </div>
+              <div class="risk-panel" id="risk-panel">
+                <div class="risk-panel__head">
+                  <div class="risk-panel__title">Риск срыва сегодня</div>
+                  <div class="chip chip--cyan" id="risk-badge">GREEN</div>
+                </div>
+                <div class="risk-panel__text" id="risk-text">
+                  Система не видит риск. Держи ритм и закрой уровень в своём окне.
+                </div>
+                <button class="btn btn--ghost" id="risk-action-btn">Открыть SOS протокол</button>
+              </div>
               <div class="milestone-strip">
                 <div class="milestone-strip__title">Контрольные точки</div>
                 <div class="milestone-strip__items">
-                  <div class="milestone-strip__item"><span>День 3</span> Легче тело, тяга под контролем</div>
-                  <div class="milestone-strip__item"><span>День 7</span> Режим закрепился, меньше откатов</div>
-                  <div class="milestone-strip__item"><span>День 14</span> Видно в зеркале и по замерам</div>
-                  <div class="milestone-strip__item"><span>День 30</span> Цикл закрыт, готов к следующему этапу</div>
+                  <div class="milestone-strip__item" data-milestone="3">
+                    <span>День 3</span>
+                    <em>Легче тело, тяга под контролем</em>
+                    <b class="milestone-strip__status">Осталось 3 дня</b>
+                  </div>
+                  <div class="milestone-strip__item" data-milestone="7">
+                    <span>День 7</span>
+                    <em>Режим закрепился, меньше откатов</em>
+                    <b class="milestone-strip__status">Осталось 7 дней</b>
+                  </div>
+                  <div class="milestone-strip__item" data-milestone="14">
+                    <span>День 14</span>
+                    <em>Видно в зеркале и по замерам</em>
+                    <b class="milestone-strip__status">Осталось 14 дней</b>
+                  </div>
+                  <div class="milestone-strip__item" data-milestone="30">
+                    <span>День 30</span>
+                    <em>Цикл закрыт, готов к следующему этапу</em>
+                    <b class="milestone-strip__status">Осталось 30 дней</b>
+                  </div>
                 </div>
               </div>
               <button class="btn btn--ghost home-details-toggle" id="home-details-toggle" type="button">
@@ -296,7 +322,7 @@
                 </div>
               </div>
               <button class="btn btn--primary mission-main-btn" id="mission-start">Запустить миссию</button>
-              <div class="metric__label" id="mission-flow-hint">Сейчас это демо-заглушка: миссия закрывается по таймеру 15:00.</div>
+              <div class="metric__label" id="mission-flow-hint">Контент в загрузке: пока используется честный демо-таймер 15:00.</div>
               <div class="metric__label" id="mission-availability">
                 1 день — 1 уровень. Прошел уровень? Следующий откроется завтра в 7:00 утра.
               </div>
@@ -385,6 +411,16 @@
                 <div class="referral-card__text" id="referral-copy-main">
                   Отправь другу реф-ссылку. Текст приглашения появится автоматически при нажатии «Поделиться».
                 </div>
+                <div class="referral-card__stats">
+                  <div class="referral-card__stat">
+                    <span>Приглашено</span>
+                    <strong id="ref-stats-invited">0</strong>
+                  </div>
+                  <div class="referral-card__stat">
+                    <span>Оплатили</span>
+                    <strong id="ref-stats-paid">0</strong>
+                  </div>
+                </div>
                 <div class="referral-card__link" id="ref-link">https://t.me/cheatcodewith_bot</div>
                 <div class="cta-row referral-card__actions">
                   <button class="btn btn--ghost" id="ref-copy-btn">Скопировать</button>
@@ -392,6 +428,9 @@
                 </div>
                 <div class="referral-card__note" id="referral-copy-note">
                   По ссылке друг получает скидку 25% на CORE/PRO. После его первой оплаты тебе начисляется 1 месяц CORE.
+                </div>
+                <div class="referral-card__goal" id="referral-goal">
+                  До бонуса: 1 первая оплата по твоей ссылке.
                 </div>
               </div>
               <div class="progress-log" id="progress-log"></div>
@@ -414,7 +453,44 @@
             </div>
             <div class="panel__body">
               <div class="metric__label">Трать чипы на практичные гайды и видео-паки. После покупки жми «Открыть материал».</div>
+              <div class="shop-reco" id="shop-reco">
+                <div class="shop-reco__title">Рекомендация сегодня</div>
+                <div class="shop-reco__text" id="shop-reco-text">
+                  Хочешь максимальный эффект за минимум решений? Возьми «Полный старт».
+                </div>
+                <button class="btn btn--primary" id="shop-reco-btn">Открыть рекомендацию</button>
+              </div>
               <div class="shop-grid">
+                <article class="shop-item shop-item--bundle">
+                  <div class="shop-item__type">КОМБО</div>
+                  <div class="shop-item__name">Анти-срыв набор (выгодно)</div>
+                  <div class="shop-item__desc">
+                    2 PDF + мотивация 3 минуты. Закрывает срывы днём и ночью, чтобы не откатываться после хороших дней.
+                  </div>
+                  <button
+                    class="btn btn--ghost shop-buy"
+                    data-item="bundle_anti_sryv"
+                    data-cost="2300"
+                    data-bundle="anti_binge_pdf,night_binge_pdf,motivation_video"
+                  >
+                    Купить набор за 2300 чипов
+                  </button>
+                </article>
+                <article class="shop-item shop-item--bundle">
+                  <div class="shop-item__type">КОМБО</div>
+                  <div class="shop-item__name">Полный старт (макс. ценность)</div>
+                  <div class="shop-item__desc">
+                    Все PDF и все видео-паки одним платежом. Быстрее внедрение без выбора «что купить сначала».
+                  </div>
+                  <button
+                    class="btn btn--ghost shop-buy"
+                    data-item="bundle_full_start"
+                    data-cost="6500"
+                    data-bundle="smart_plate_pdf,anti_binge_pdf,night_binge_pdf,belly_sides_pdf,motivation_video,legs_glutes_pack,upper_body_pack,core_condition_pack"
+                  >
+                    Купить набор за 6500 чипов
+                  </button>
+                </article>
                 <article class="shop-item">
                   <div class="shop-item__type">PDF-ГАЙД</div>
                   <div class="shop-item__name">Умная тарелка: худей без калькулятора</div>
@@ -536,6 +612,24 @@
                 <span class="sub-highlight">ТЕКУЩИЙ УРОВЕНЬ</span>: CORE.<br />
                 <span class="sub-highlight">МОДУЛЬ ТРЕНИРОВОК</span>: ПЕРЕЗАПУСК.
               </div>
+              <div class="offer-math">
+                <div class="offer-math__item">
+                  <span>Результат</span>
+                  <strong>Минус см и контроль тяги</strong>
+                </div>
+                <div class="offer-math__item">
+                  <span>Вероятность</span>
+                  <strong>Дневной трекинг + SOS защита</strong>
+                </div>
+                <div class="offer-math__item">
+                  <span>Время</span>
+                  <strong>15 минут в день</strong>
+                </div>
+                <div class="offer-math__item">
+                  <span>Усилия</span>
+                  <strong>Готовые шаги без лишних решений</strong>
+                </div>
+              </div>
               <div class="metric__label" id="subscription-ref-note">РЕФ-СКИДКА: 25% на первый платёж CORE/PRO по приглашению.</div>
               <div class="proof-strip">
                 <div class="proof-strip__title">Почему это работает</div>
@@ -550,6 +644,22 @@
                     <span>Реальный результат: фото до/после</span>
                     <em>Открыть кейс</em>
                   </button>
+                </div>
+              </div>
+              <div class="pending-upgrade pending-upgrade--offer" id="subscription-fast-offer">
+                <div class="pending-upgrade__title">Быстрый вход</div>
+                <div class="pending-upgrade__text" id="subscription-fast-text">
+                  Лучшее соотношение цена/поддержка: начни с PRO и закрой первый цикл быстрее.
+                </div>
+                <button class="btn btn--primary pending-upgrade__btn" id="subscription-fast-cta">
+                  Выбрать PRO
+                </button>
+              </div>
+              <div class="guarantee-block">
+                <div class="guarantee-block__title">Гарантия «Результат или возврат»</div>
+                <div class="guarantee-block__text">
+                  Если за цикл нет сдвига при соблюдении условий (24/30 уровней, старт/финиш замеры и фото),
+                  оформляем возврат или бесплатный месяц доступа.
                 </div>
               </div>
               <div class="pending-upgrade hidden" id="subscription-pending">
@@ -570,7 +680,7 @@
               <div class="sub-grid">
                 <article class="sub-card">
                   <div class="sub-card__title">CORE</div>
-                  <div class="sub-card__desc">Идеально для тех, кто хочет попробовать или умеет сам.</div>
+                  <div class="sub-card__desc">Старт без перегруза: вход в режим и первые заметные изменения за 7 дней.</div>
                   <div class="sub-card__term">1 490 ₽ / мес · 2 990 ₽ / 3 мес</div>
                   <div class="sub-card__sale">Реф-скидка 25% на первый платёж по приглашению</div>
                   <button class="btn btn--ghost" id="upgrade-core-btn" disabled>Открыть CORE · −25% по реф-ссылке</button>
@@ -586,7 +696,7 @@
                 </article>
                 <article class="sub-card">
                   <div class="sub-card__title">PRO</div>
-                  <div class="sub-card__desc">Для тех, кому нужна среда и страховка от ошибок.</div>
+                  <div class="sub-card__desc">Лучший баланс цены и результата: меньше срывов, выше скорость до цели.</div>
                   <div class="sub-card__term">3 490 ₽ / мес · 6 990 ₽ / 3 мес</div>
                   <div class="sub-card__sale">Реф-скидка 25% на первый платёж по приглашению</div>
                   <button class="btn btn--ghost" id="upgrade-boost-btn">Открыть PRO · −25% по реф-ссылке</button>
@@ -602,7 +712,7 @@
                 </article>
                 <article class="sub-card">
                   <div class="sub-card__title">VIP</div>
-                  <div class="sub-card__desc">Полный аутсорс дисциплины и гарантия возврата.</div>
+                  <div class="sub-card__desc">Премиум-контроль: персональная стратегия и сопровождение с приоритетом.</div>
                   <div class="sub-card__term">34 990 ₽ · разовая покупка</div>
                   <div class="sub-card__sale">Разовая покупка. Без ежемесячного продления.</div>
                   <button class="btn btn--ghost" id="upgrade-elite-btn">Открыть VIP</button>
@@ -960,6 +1070,6 @@
       </div>
     </div>
 
-    <script src="app.js?v=20260220a"></script>
+    <script src="app.js?v=20260222a"></script>
   </body>
 </html>

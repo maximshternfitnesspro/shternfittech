@@ -9,7 +9,7 @@ import sqlite3
 import urllib.error
 import urllib.request
 import urllib.parse
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -165,6 +165,21 @@ def init_db() -> None:
             )
             """
         )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS analytics_events (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              event TEXT NOT NULL,
+              tg_user_id TEXT,
+              tier TEXT,
+              screen TEXT,
+              level INTEGER,
+              session_id TEXT,
+              meta TEXT,
+              created_at TEXT NOT NULL
+            )
+            """
+        )
 
 
 def bot_menu_was_sent(tg_user_id: str) -> bool:
@@ -289,6 +304,13 @@ def resolve_tg_user_id(request: Request, fallback_tg_user_id: str | None) -> tup
     if not tg_user_id:
         raise HTTPException(status_code=400, detail="tg_user_id required")
     return tg_user_id, False
+
+
+def resolve_tg_user_id_optional(request: Request, fallback_tg_user_id: str | None) -> tuple[str | None, bool]:
+    try:
+        return resolve_tg_user_id(request, fallback_tg_user_id)
+    except HTTPException:
+        return None, False
 
 
 def telegram_get_chat_member(chat_id: str, tg_user_id: str) -> dict[str, Any] | None:
@@ -536,6 +558,39 @@ def get_referral_stats(referrer_tg_user_id: str) -> dict[str, int]:
         "invited_total": int((invited or {"c": 0})["c"]),
         "paid_total": int((rewarded or {"c": 0})["c"]),
     }
+
+
+def log_analytics_event(
+    event: str,
+    tg_user_id: str | None,
+    tier: str | None,
+    screen: str | None,
+    level: int | None,
+    session_id: str | None,
+    meta: Any,
+) -> None:
+    name = str(event or "").strip()
+    if not name:
+        return
+    tier_norm = normalize_tier(tier) if tier else None
+    safe_level = int(level) if isinstance(level, int) else None
+    with db() as conn:
+        conn.execute(
+            """
+            INSERT INTO analytics_events (event, tg_user_id, tier, screen, level, session_id, meta, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                name[:80],
+                (tg_user_id or "")[:64] or None,
+                tier_norm,
+                (str(screen).strip()[:32] if screen else None),
+                safe_level,
+                (str(session_id).strip()[:64] if session_id else None),
+                json_dumps(meta),
+                now_iso(),
+            ),
+        )
 
 
 def upsert_pending(tg_user_id: str, tier: str) -> None:
@@ -927,6 +982,88 @@ async def referral_register(request: Request, token: str | None = None) -> dict[
 def referral_status(tg_user_id: str = Query(..., min_length=1, max_length=64)) -> dict[str, Any]:
     stats = get_referral_stats(tg_user_id)
     return {"ok": True, "tg_user_id": tg_user_id.strip(), **stats}
+
+
+@app.post("/api/analytics/event")
+async def analytics_event(request: Request) -> dict[str, Any]:
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+
+    if not isinstance(body, dict):
+        body = {}
+
+    event = str(body.get("event", "")).strip()
+    if not event:
+        return {"ok": False, "ignored": True, "reason": "event_required"}
+
+    fallback_tg = str(body.get("tg_user_id", "")).strip() or None
+    resolved_id, _verified = resolve_tg_user_id_optional(request, fallback_tg)
+    tier = normalize_tier(body.get("tier"))
+    screen = str(body.get("screen", "")).strip() or None
+    level_value = body.get("level")
+    level = int(level_value) if isinstance(level_value, int) else None
+    session_id = str(body.get("session_id", "")).strip() or None
+    meta = body.get("meta")
+    if not isinstance(meta, (dict, list)):
+        meta = {}
+
+    log_analytics_event(
+        event=event,
+        tg_user_id=resolved_id or fallback_tg,
+        tier=tier,
+        screen=screen,
+        level=level,
+        session_id=session_id,
+        meta=meta,
+    )
+    return {"ok": True}
+
+
+@app.get("/api/analytics/funnel")
+def analytics_funnel(
+    token: str | None = None,
+    days: int = Query(7, ge=1, le=90),
+) -> dict[str, Any]:
+    if ADMIN_TOKEN and token != ADMIN_TOKEN:
+        raise HTTPException(status_code=403, detail="forbidden")
+
+    since = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
+    important_events = [
+        "app_open",
+        "mission_start",
+        "mission_complete",
+        "paywall_open",
+        "payment_link_open",
+        "shop_recommendation_open",
+        "shop_purchase",
+        "referral_copy",
+        "referral_share",
+    ]
+
+    stats: dict[str, int] = {}
+    with db() as conn:
+        for event_name in important_events:
+            row = conn.execute(
+                "SELECT COUNT(*) AS c FROM analytics_events WHERE event = ? AND created_at >= ?",
+                (event_name, since),
+            ).fetchone()
+            stats[event_name] = int((row or {"c": 0})["c"])
+
+    mission_start_count = max(0, int(stats.get("mission_start", 0)))
+    paywall_open_count = max(0, int(stats.get("paywall_open", 0)))
+    recommendation_open_count = max(0, int(stats.get("shop_recommendation_open", 0)))
+
+    derived = {
+        "mission_completion_rate": round((stats.get("mission_complete", 0) / mission_start_count), 4) if mission_start_count else 0.0,
+        "paywall_to_payment_click_rate": round((stats.get("payment_link_open", 0) / paywall_open_count), 4) if paywall_open_count else 0.0,
+        "shop_recommendation_to_purchase_rate": round((stats.get("shop_purchase", 0) / recommendation_open_count), 4)
+        if recommendation_open_count
+        else 0.0,
+    }
+
+    return {"ok": True, "days": days, "since": since, "events": stats, "derived": derived}
 
 
 @app.get("/api/payments/link")

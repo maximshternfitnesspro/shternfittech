@@ -1107,6 +1107,45 @@ body::after {
   letter-spacing: 0.05em;
 }
 
+.risk-panel {
+  margin-top: 10px;
+  border: 1px solid rgba(255, 45, 111, 0.4);
+  border-radius: 12px;
+  padding: 10px;
+  background:
+    radial-gradient(circle at 12% 18%, rgba(49, 224, 255, 0.14), transparent 55%),
+    radial-gradient(circle at 88% 82%, rgba(255, 45, 111, 0.12), transparent 58%),
+    linear-gradient(140deg, rgba(9, 12, 22, 0.94), rgba(7, 9, 17, 0.94));
+  box-shadow: inset 0 0 0 1px rgba(49, 224, 255, 0.16), 0 0 18px rgba(49, 224, 255, 0.12);
+}
+
+.risk-panel__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.risk-panel__title {
+  font-family: "Russo One", sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #f5f9ff;
+}
+
+.risk-panel__text {
+  margin-top: 8px;
+  color: #c9def2;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.risk-panel .btn {
+  margin-top: 8px;
+  width: 100%;
+}
+
 .milestone-strip {
   margin-top: 10px;
   border: 1px solid rgba(255, 45, 111, 0.36);
@@ -1137,13 +1176,36 @@ body::after {
   font-size: 11px;
   color: rgba(213, 230, 248, 0.88);
   background: linear-gradient(135deg, rgba(8, 12, 22, 0.88), rgba(5, 8, 16, 0.9));
+  display: grid;
+  gap: 4px;
 }
 
 .milestone-strip__item span {
   display: inline-block;
-  margin-right: 6px;
   font-family: "Russo One", sans-serif;
   color: var(--cyan);
+}
+
+.milestone-strip__item em {
+  font-style: normal;
+  color: rgba(201, 223, 244, 0.82);
+  line-height: 1.25;
+}
+
+.milestone-strip__status {
+  font-family: "Russo One", sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: rgba(255, 133, 188, 0.95);
+}
+
+.milestone-strip__item.is-done {
+  border-color: rgba(49, 224, 255, 0.9);
+  box-shadow: inset 0 0 0 1px rgba(255, 45, 111, 0.5), 0 0 14px rgba(49, 224, 255, 0.24);
+}
+
+.milestone-strip__item.is-done .milestone-strip__status {
+  color: rgba(49, 224, 255, 0.96);
 }
 
 .home-details {
@@ -1825,6 +1887,27 @@ body::after {
   background: rgba(255, 45, 111, 0.12);
 }
 
+.risk-badge--green {
+  border-color: rgba(49, 224, 255, 0.82);
+  color: rgba(154, 255, 248, 0.98);
+  background: rgba(49, 224, 255, 0.2);
+  text-shadow: 0 0 12px rgba(49, 224, 255, 0.62);
+}
+
+.risk-badge--yellow {
+  border-color: rgba(255, 184, 76, 0.82);
+  color: rgba(255, 216, 142, 0.98);
+  background: rgba(255, 176, 64, 0.18);
+  text-shadow: 0 0 12px rgba(255, 190, 86, 0.55);
+}
+
+.risk-badge--red {
+  border-color: rgba(255, 73, 127, 0.9);
+  color: rgba(255, 165, 191, 0.98);
+  background: rgba(255, 45, 111, 0.22);
+  text-shadow: 0 0 12px rgba(255, 45, 111, 0.65);
+}
+
 @keyframes screenIn {
   from {
     opacity: 0;
@@ -2032,6 +2115,10 @@ body.preview-light_trail .btn {
   }
 
   .proof-strip__items {
+    grid-template-columns: 1fr;
+  }
+
+  .offer-math {
     grid-template-columns: 1fr;
   }
 
@@ -2786,6 +2873,39 @@ body.preview-light_trail .btn {
   gap: 12px;
 }
 
+.shop-reco {
+  margin-top: 10px;
+  margin-bottom: 12px;
+  border: 1px solid rgba(49, 224, 255, 0.5);
+  border-radius: 12px;
+  padding: 10px;
+  background:
+    radial-gradient(circle at 82% 24%, rgba(255, 45, 111, 0.14), transparent 56%),
+    radial-gradient(circle at 16% 72%, rgba(49, 224, 255, 0.12), transparent 58%),
+    linear-gradient(140deg, rgba(10, 13, 24, 0.96), rgba(7, 9, 16, 0.96));
+  box-shadow: inset 0 0 0 1px rgba(255, 45, 111, 0.24), 0 0 18px rgba(49, 224, 255, 0.2);
+}
+
+.shop-reco__title {
+  font-family: "Russo One", sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--cyan);
+}
+
+.shop-reco__text {
+  margin-top: 6px;
+  color: #d6ebff;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.shop-reco .btn {
+  margin-top: 8px;
+  width: 100%;
+}
+
 .shop-item {
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 12px;
@@ -2794,6 +2914,23 @@ body.preview-light_trail .btn {
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+.shop-item.is-highlight {
+  border-color: rgba(49, 224, 255, 0.86);
+  box-shadow:
+    0 0 0 1px rgba(255, 45, 111, 0.62),
+    0 0 24px rgba(49, 224, 255, 0.45),
+    inset 0 0 0 1px rgba(49, 224, 255, 0.2);
+}
+
+.shop-item--bundle {
+  border-color: rgba(255, 45, 111, 0.48);
+  background:
+    radial-gradient(circle at 20% 24%, rgba(49, 224, 255, 0.14), transparent 52%),
+    radial-gradient(circle at 84% 72%, rgba(255, 45, 111, 0.15), transparent 56%),
+    linear-gradient(140deg, rgba(12, 12, 22, 0.96), rgba(7, 9, 16, 0.96));
+  box-shadow: inset 0 0 0 1px rgba(49, 224, 255, 0.18), 0 0 22px rgba(255, 45, 111, 0.14);
 }
 
 .shop-item__type {
@@ -2878,6 +3015,36 @@ body.preview-light_trail .btn {
   overflow-wrap: anywhere;
 }
 
+.referral-card__stats {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.referral-card__stat {
+  border: 1px solid rgba(49, 224, 255, 0.34);
+  border-radius: 10px;
+  padding: 8px 10px;
+  background: linear-gradient(140deg, rgba(9, 13, 24, 0.88), rgba(8, 10, 18, 0.88));
+  display: grid;
+  gap: 4px;
+}
+
+.referral-card__stat span {
+  color: rgba(163, 194, 219, 0.88);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.referral-card__stat strong {
+  color: var(--cyan);
+  font-family: "Russo One", sans-serif;
+  font-size: 16px;
+  letter-spacing: 0.08em;
+}
+
 .referral-card__actions {
   margin-top: 10px;
   display: grid;
@@ -2903,6 +3070,18 @@ body.preview-light_trail .btn {
   line-height: 1.35;
 }
 
+.referral-card__goal {
+  margin-top: 8px;
+  border: 1px solid rgba(49, 224, 255, 0.38);
+  border-radius: 10px;
+  padding: 8px 10px;
+  color: #e8f7ff;
+  font-size: 11px;
+  line-height: 1.35;
+  background: linear-gradient(140deg, rgba(7, 13, 23, 0.92), rgba(7, 9, 18, 0.92));
+  box-shadow: inset 0 0 0 1px rgba(255, 45, 111, 0.14);
+}
+
 .sub-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -2912,6 +3091,63 @@ body.preview-light_trail .btn {
 .sub-highlight {
   color: #ff6eab;
   text-shadow: 0 0 10px rgba(255, 45, 111, 0.55);
+}
+
+.offer-math {
+  margin: 10px 0 12px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.offer-math__item {
+  border: 1px solid rgba(49, 224, 255, 0.32);
+  border-radius: 10px;
+  padding: 8px 9px;
+  background: linear-gradient(145deg, rgba(10, 14, 24, 0.9), rgba(7, 9, 17, 0.9));
+  display: grid;
+  gap: 4px;
+}
+
+.offer-math__item span {
+  color: rgba(153, 185, 212, 0.86);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.offer-math__item strong {
+  font-family: "Russo One", sans-serif;
+  color: #f5fbff;
+  font-size: 11px;
+  line-height: 1.3;
+}
+
+.guarantee-block {
+  margin: 12px 0 14px;
+  border: 1px solid rgba(49, 224, 255, 0.4);
+  border-radius: 12px;
+  padding: 10px;
+  background:
+    radial-gradient(circle at 84% 22%, rgba(49, 224, 255, 0.12), transparent 54%),
+    radial-gradient(circle at 18% 80%, rgba(255, 45, 111, 0.12), transparent 56%),
+    linear-gradient(140deg, rgba(11, 13, 25, 0.94), rgba(8, 10, 17, 0.94));
+  box-shadow: inset 0 0 0 1px rgba(255, 45, 111, 0.22), 0 0 18px rgba(49, 224, 255, 0.16);
+}
+
+.guarantee-block__title {
+  font-family: "Russo One", sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--cyan);
+}
+
+.guarantee-block__text {
+  margin-top: 6px;
+  color: #cce2f5;
+  font-size: 12px;
+  line-height: 1.35;
 }
 
 .proof-strip {
@@ -3014,6 +3250,11 @@ body.preview-light_trail .btn {
   margin-top: 8px;
   font-size: 12px;
   opacity: 0.95;
+}
+
+.pending-upgrade--offer {
+  border-color: rgba(255, 45, 111, 0.52);
+  box-shadow: inset 0 0 0 1px rgba(49, 224, 255, 0.24), 0 0 24px rgba(255, 45, 111, 0.18);
 }
 
 .sub-card {
@@ -3516,6 +3757,15 @@ body.mobile-nav-mode .mobile-tabbar__btn[data-nav="settings"] .mobile-tabbar__ic
 
   .milestone-strip__items {
     grid-template-columns: 1fr;
+  }
+
+  .referral-card__actions {
+    grid-template-columns: 1fr;
+  }
+
+  .shop-reco__title,
+  .risk-panel__title {
+    font-size: 11px;
   }
 
   .mobile-tabbar {
